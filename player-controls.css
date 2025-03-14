@@ -2,6 +2,199 @@ body {
   margin: 0; 
   overflow: hidden; 
   font-family: 'Figtree', sans-serif;
+  position: relative;
+  background-color: #121212;
+  color: white;
+}
+
+/* Audio Player Container */
+.audio-player-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  transition: opacity 0.5s ease;
+}
+
+.album-artwork {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin-bottom: 20px;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  background-color: #000;
+}
+
+.album-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 15px;
+  transition: transform 0.3s ease;
+}
+
+/* Optional hover effect for desktop */
+@media (hover: hover) {
+  .album-artwork:hover img {
+    transform: scale(1.03);
+  }
+}
+
+.view-xr-button {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: 'Figtree', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.view-xr-button:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.view-xr-button i {
+  font-size: 16px;
+}
+
+.audio-info {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.audio-info h2 {
+  margin: 0 0 5px 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.audio-info p {
+  margin: 0;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Video Player Container */
+.video-player-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  transition: opacity 0.5s ease;
+}
+
+/* Exit XR button */
+.exit-xr-button {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: 'Figtree', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+.exit-xr-button:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.exit-xr-button i {
+  font-size: 16px;
+}
+
+/* Mobile-specific exit XR button */
+body.mobile-device .exit-xr-button {
+  font-size: 12px;
+  padding: 6px 12px;
+  top: 15px;
+  left: 15px;
+}
+
+/* Utility classes */
+.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Mobile adjustments for audio player */
+body.mobile-device .album-artwork {
+  width: calc(100% - 20px);
+  max-width: none;
+}
+
+body.mobile-device .audio-info h2 {
+  font-size: 20px;
+}
+
+body.mobile-device .audio-info p {
+  font-size: 14px;
+}
+
+/* Mobile-specific body classes */
+body.mobile-device .player-controls {
+  max-width: none;
+  width: calc(100% - 20px);
+  margin: 0;
+  border-radius: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+  padding: 10px 10px 8px 10px;
+}
+
+body.mobile-device.landscape .player-controls {
+  width: calc(100% - 40px);
+  margin: 0;
+  padding: 8px 10px 6px 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+}
+
+body.mobile-device.portrait .player-controls {
+  width: calc(100% - 20px);
+  padding: 10px 10px 8px 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+}
+
+body.mobile-device.landscape .album-artwork {
+  width: calc(100% - 40px);
 }
 
 .player-controls {
@@ -17,6 +210,14 @@ body {
   z-index: 100;
   box-sizing: border-box;
   font-family: 'Figtree', sans-serif;
+  /* Ensure the element doesn't get pushed off-screen */
+  right: auto;
+  margin-left: 0;
+  margin-right: 0;
+  /* Fix for potential transform issues */
+  will-change: transform;
+  /* Ensure proper stacking context */
+  isolation: isolate;
 }
 
 /* Scene and playlist information styles */
@@ -25,6 +226,10 @@ body {
   margin-bottom: 12px;
   display: flex;
   justify-content: center;
+}
+
+body.mobile-device.landscape .info-container {
+  margin-bottom: 8px;
 }
 
 .video-info {
@@ -36,6 +241,10 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+body.mobile-device .video-info {
+  font-size: 12px;
 }
 
 .scene-name {
@@ -113,6 +322,10 @@ body {
   gap: 8px;
 }
 
+body.mobile-device.landscape .scrubber-container {
+  margin-bottom: 10px;
+}
+
 .time-display {
   color: white;
   font-size: 12px;
@@ -120,6 +333,11 @@ body {
   text-align: center;
   font-family: 'Figtree', sans-serif;
   flex-shrink: 0;
+}
+
+body.mobile-device .time-display {
+  min-width: 45px;
+  font-size: 11px;
 }
 
 .scrubber-wrapper {
@@ -202,6 +420,10 @@ body {
   width: fit-content;
 }
 
+body.mobile-device .main-controls {
+  gap: 15px;
+}
+
 .volume-control {
   position: absolute;
   right: 0;
@@ -210,6 +432,14 @@ body {
 .camera-reset {
   position: absolute;
   left: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.camera-reset.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .control-button {
@@ -227,6 +457,13 @@ body {
   transition: background 0.2s;
   padding: 0;
   line-height: 1;
+  position: relative;
+}
+
+body.mobile-device .control-button {
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
 }
 
 .control-button:hover {
@@ -240,6 +477,10 @@ body {
   width: 100%;
   height: 100%;
   line-height: 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Muted state styling */
@@ -258,29 +499,34 @@ body {
 }
 
 #rewindBtn i {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  transform: translateX(-1px); /* Slight adjustment to center the icon */
+  /* No specific adjustments needed anymore */
 }
 
 #forwardBtn i {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  transform: translateX(1px); /* Slight adjustment to center the icon */
+  /* No specific adjustments needed anymore */
 }
 
 #playPauseBtn {
   font-size: 28px;
   width: 48px;
   height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#playPauseBtn i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+body.mobile-device #playPauseBtn {
+  font-size: 24px;
+  width: 42px;
+  height: 42px;
 }
 
 .message {
@@ -308,9 +554,14 @@ body {
   height: 100% !important;
 }
 
+/* Legacy mobile styles - keeping for backward compatibility */
 @media (max-width: 480px) {
   .player-controls {
-    max-width: 320px;
+    max-width: none;
+    width: calc(100% - 20px);
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
     padding: 10px 10px 8px 10px;
   }
   
@@ -334,4 +585,313 @@ body {
   .video-info {
     font-size: 12px;
   }
+}
+
+/* Legacy landscape adjustments - keeping for backward compatibility */
+@media (max-width: 896px) and (orientation: landscape) {
+  .player-controls {
+    max-width: none;
+    width: calc(100% - 40px);
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    padding: 8px 10px 6px 10px;
+  }
+  
+  .info-container {
+    margin-bottom: 8px;
+  }
+  
+  .scrubber-container {
+    margin-bottom: 10px;
+  }
+}
+
+/* Playlist UI Styles */
+.playlist-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 300;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  padding: 0;
+  font-family: 'Figtree', sans-serif;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  /* Prevent initial rendering at bottom of screen */
+  visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.playlist-container.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+  visibility: visible;
+}
+
+.playlist-header {
+  padding: 20px 20px 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.playlist-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 5px 0;
+}
+
+.playlist-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.playlist-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 5px;
+  transition: color 0.2s;
+}
+
+.playlist-close:hover {
+  color: white;
+}
+
+.playlist-tracks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: calc(80vh - 80px);
+  overflow-y: auto;
+  flex-grow: 1;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Webkit scrollbar styling */
+.playlist-tracks::-webkit-scrollbar {
+  width: 6px;
+}
+
+.playlist-tracks::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.playlist-tracks::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.playlist-tracks::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.playlist-track {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  color: white;
+  position: relative;
+}
+
+.playlist-track:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.playlist-track.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  position: relative;
+  font-weight: 500;
+}
+
+/* Play icon removed */
+
+.track-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.track-info {
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.track-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  margin: 0 0 3px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-duration {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.playlist-toggle {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 22px;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.playlist-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.playlist-toggle i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Pulsing dot removed */
+
+body.mobile-device .playlist-toggle {
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+}
+
+/* Add a semi-transparent overlay when playlist is open */
+.playlist-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 250;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.playlist-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Add a new container for the playlist button in the player controls */
+.playlist-control {
+  position: absolute;
+  left: 0;
+}
+
+/* Adjust the player controls when playlist is open */
+body.playlist-open .player-controls {
+  z-index: 201;
+}
+
+/* Add a loading animation for the loading state */
+@keyframes pulse-loading {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+.playlist-track .loading {
+  animation: pulse-loading 1.5s infinite;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Mobile-specific fixes for playlist positioning */
+@media (max-width: 768px) {
+  .playlist-container {
+    /* Ensure proper positioning on mobile */
+    position: fixed;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) scale(0.95) !important;
+    max-height: 75vh; /* Slightly smaller on mobile */
+    width: 95%; /* Wider on mobile */
+    /* Prevent any positioning glitches */
+    bottom: auto;
+    right: auto;
+    margin: 0;
+  }
+  
+  .playlist-container.open {
+    transform: translate(-50%, -50%) scale(1) !important;
+  }
+}
+
+#muteBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#muteBtn i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#resetCameraBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#resetCameraBtn i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 } 

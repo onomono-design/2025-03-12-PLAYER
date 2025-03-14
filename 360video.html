@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>360° Video Player</title>
+  <title>Media Player</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,7 +14,7 @@
 </head>
 <body>
 
-  <div id="message" class="message">Loading video...</div>
+  <div id="message" class="message">Loading media...</div>
   
   <!-- Mobile device motion permission overlay -->
   <div id="permissionOverlay" class="permission-overlay">
@@ -25,13 +25,56 @@
     </div>
   </div>
 
+  <!-- Audio-only player with album artwork -->
+  <div id="audioPlayerContainer" class="audio-player-container">
+    <div class="album-artwork">
+      <img id="albumArt" src="https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/002+Look_Tin_Eli_12017_Page_17.jpg" alt="Chinatown Album Artwork">
+      <button id="viewXRBtn" class="view-xr-button">
+        <i class="fas fa-vr-cardboard"></i> View in 360°
+      </button>
+    </div>
+    <div class="audio-info">
+      <h2 id="audioTitle">Chapter 1: Chinatown Memories</h2>
+      <p id="audioArtist">Look Up</p>
+    </div>
+  </div>
+
+  <!-- 360° Video Player (hidden by default) -->
+  <div id="videoPlayerContainer" class="video-player-container hidden">
+    <a-scene loading-screen="dotsColor: white; backgroundColor: black" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-assets>
+        <video id="video360" 
+               crossorigin="anonymous"
+               preload="auto"
+               muted="muted"
+               playsinline
+               webkit-playsinline
+               autoplay="false"
+               paused>
+          <source id="videoSource" src="https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4" type="video/mp4">
+        </video>
+      </a-assets>
+
+      <!-- Videosphere displaying the 360° video -->
+      <a-videosphere id="videosphere" src="#video360" rotation="0 -90 0" preload="auto"></a-videosphere>
+
+      <a-entity id="cameraEntity" camera look-controls="reverseMouseDrag: true" position="0 1.6 0"></a-entity>
+    </a-scene>
+    
+    <!-- Return to audio-only view button (positioned in top left corner) -->
+    <button id="exitXRBtn" class="exit-xr-button">
+      <i class="fas fa-music"></i> Return to Audio
+    </button>
+  </div>
+
+  <!-- Shared player controls for both modes -->
   <div class="player-controls">
     <!-- Scene and playlist information row -->
     <div class="info-container">
       <div class="video-info">
-        <span id="sceneName" class="scene-name">Japantown</span>
+        <span id="sceneName" class="scene-name">Chapter 1: Chinatown Memories</span>
         <span class="separator">|</span>
-        <span id="playlistName" class="playlist-name">San Francisco 360°</span>
+        <span id="playlistName" class="playlist-name">Look Up</span>
       </div>
     </div>
     
@@ -44,6 +87,9 @@
       <span id="duration" class="time-display">0:00</span>
     </div>
     <div class="buttons-container">
+      <div class="playlist-control">
+        <button id="playlistToggle" class="control-button playlist-toggle"><i class="fas fa-list"></i></button>
+      </div>
       <div class="camera-reset">
         <button id="resetCameraBtn" class="control-button"><i class="fas fa-sync-alt"></i></button>
       </div>
@@ -60,26 +106,26 @@
     </div>
   </div>
 
-  <a-scene loading-screen="dotsColor: white; backgroundColor: black" vr-mode-ui="enabled: false">
-    <a-assets>
-      <video id="video360" 
-             crossorigin="anonymous"
-             loop="true" 
-             preload="auto"
-             muted="muted"
-             playsinline
-             webkit-playsinline
-             autoplay="false"
-             paused>
-        <source src="https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4" type="video/mp4">
-      </video>
-    </a-assets>
+  <!-- Playlist UI -->
+  <div id="playlistOverlay" class="playlist-overlay"></div>
+  
+  <div id="playlistContainer" class="playlist-container">
+    <div class="playlist-header">
+      <h2 class="playlist-title">Chinatown Audio Tour</h2>
+      <p class="playlist-subtitle">Look Up</p>
+      <button id="playlistClose" class="playlist-close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <ul id="playlistTracks" class="playlist-tracks">
+      <!-- Playlist tracks will be populated by JavaScript -->
+    </ul>
+  </div>
 
-    <!-- Videosphere displaying the 360° video -->
-    <a-videosphere id="videosphere" src="#video360" rotation="0 -90 0" preload="auto"></a-videosphere>
-
-    <a-entity id="cameraEntity" camera look-controls="reverseMouseDrag: true" position="0 1.6 0"></a-entity>
-  </a-scene>
+  <!-- Hidden audio element for audio-only mode -->
+  <audio id="audioElement" preload="auto">
+    <source id="audioSource" src="https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4" type="audio/mp4">
+  </audio>
 
   <!-- External JavaScript file -->
   <script src="player-controls.js"></script>
