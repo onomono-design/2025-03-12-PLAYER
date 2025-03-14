@@ -1,0 +1,337 @@
+body { 
+  margin: 0; 
+  overflow: hidden; 
+  font-family: 'Figtree', sans-serif;
+}
+
+.player-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 400px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 15px;
+  padding: 15px 15px 12px 15px;
+  z-index: 100;
+  box-sizing: border-box;
+  font-family: 'Figtree', sans-serif;
+}
+
+/* Scene and playlist information styles */
+.info-container {
+  width: 100%;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.video-info {
+  color: white;
+  font-size: 14px;
+  text-align: center;
+  font-family: 'Figtree', sans-serif;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scene-name {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.separator {
+  margin: 0 8px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.playlist-name {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Permission overlay for mobile devices */
+.permission-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: none; /* Hidden by default, shown via JS on mobile */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  font-family: 'Figtree', sans-serif;
+}
+
+.permission-content {
+  background-color: rgba(30, 30, 30, 0.9);
+  border-radius: 15px;
+  padding: 30px;
+  max-width: 90%;
+  width: 400px;
+  text-align: center;
+  color: white;
+}
+
+.permission-content h2 {
+  margin-top: 0;
+  font-weight: 600;
+  font-size: 24px;
+}
+
+.permission-content p {
+  margin-bottom: 25px;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+.permission-button {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Figtree', sans-serif;
+  transition: background-color 0.2s;
+}
+
+.permission-button:hover {
+  background-color: #3367d6;
+}
+
+.scrubber-container {
+  width: 100%;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-display {
+  color: white;
+  font-size: 12px;
+  min-width: 50px;
+  text-align: center;
+  font-family: 'Figtree', sans-serif;
+  flex-shrink: 0;
+}
+
+.scrubber-wrapper {
+  position: relative;
+  flex-grow: 1;
+  height: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.scrubber {
+  position: absolute;
+  width: 100%;
+  height: 5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.3);
+  border-radius: 5px;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  z-index: 2;
+}
+
+.scrubber-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 5px;
+  width: 0;
+  background-color: rgba(255,255,255,0.8);
+  border-radius: 5px 0 0 5px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  position: relative;
+  z-index: 3;
+}
+
+.scrubber::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: none;
+  position: relative;
+  z-index: 3;
+}
+
+.buttons-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 3px;
+}
+
+.main-controls-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.main-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  width: fit-content;
+}
+
+.volume-control {
+  position: absolute;
+  right: 0;
+}
+
+.camera-reset {
+  position: absolute;
+  left: 0;
+}
+
+.control-button {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.control-button:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.control-button i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+}
+
+/* Muted state styling */
+.muted i {
+  color: #D6200C; /* Red color for muted state */
+  transition: color 0.2s;
+}
+
+.muted:hover {
+  background: rgba(214, 32, 12, 0.2); /* Slightly red background on hover when muted */
+}
+
+/* Specific adjustments for rewind and forward buttons */
+#rewindBtn, #forwardBtn {
+  padding: 0;
+}
+
+#rewindBtn i {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transform: translateX(-1px); /* Slight adjustment to center the icon */
+}
+
+#forwardBtn i {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transform: translateX(1px); /* Slight adjustment to center the icon */
+}
+
+#playPauseBtn {
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
+}
+
+.message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: white;
+  background: rgba(0,0,0,0.7);
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  z-index: 100;
+  font-family: 'Figtree', sans-serif;
+}
+
+/* A-Frame scene container adjustments */
+.a-canvas {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 480px) {
+  .player-controls {
+    max-width: 320px;
+    padding: 10px 10px 8px 10px;
+  }
+  
+  .control-button {
+    font-size: 18px;
+    width: 32px;
+    height: 32px;
+  }
+  
+  #playPauseBtn {
+    font-size: 24px;
+    width: 42px;
+    height: 42px;
+  }
+  
+  .time-display {
+    min-width: 45px;
+    font-size: 11px;
+  }
+  
+  .video-info {
+    font-size: 12px;
+  }
+} 
