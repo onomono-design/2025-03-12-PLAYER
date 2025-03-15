@@ -58,7 +58,7 @@
       <!-- Videosphere displaying the 360° video -->
       <a-videosphere id="videosphere" src="#video360" rotation="0 -90 0" preload="auto"></a-videosphere>
 
-      <a-entity id="cameraEntity" camera look-controls="reverseMouseDrag: true" position="0 1.6 0"></a-entity>
+      <a-entity id="cameraEntity" camera look-controls="reverseMouseDrag: true" camera-recenter position="0 1.6 0"></a-entity>
     </a-scene>
     
     <!-- Return to audio-only view button (positioned in top left corner) -->
@@ -69,6 +69,11 @@
 
   <!-- Shared player controls for both modes -->
   <div class="player-controls">
+    <!-- Recenter camera button (only visible in XR mode) -->
+    <button id="recenterCameraBtn" class="recenter-camera-button" onclick="recenterCamera(); return false;">
+      <i class="fas fa-compass"></i> Recenter View
+    </button>
+    
     <!-- Scene and playlist information row -->
     <div class="info-container">
       <div class="video-info">
@@ -88,7 +93,7 @@
     </div>
     <div class="buttons-container">
       <div class="playlist-control">
-        <button id="playlistToggle" class="control-button playlist-toggle"><i class="fas fa-list"></i></button>
+        <button id="playlistToggle" class="control-button playlist-toggle"><i class="fas fa-bars"></i></button>
       </div>
       <div class="camera-reset">
         <button id="resetCameraBtn" class="control-button"><i class="fas fa-sync-alt"></i></button>
@@ -129,5 +134,181 @@
 
   <!-- External JavaScript file -->
   <script src="player-controls.js"></script>
+  
+  <!-- Custom A-Frame component for camera recentering -->
+  <script>
+    // Register a custom component for camera recentering
+    AFRAME.registerComponent('camera-recenter', {
+      schema: {
+        // Add a schema property to track the initial device orientation
+        initialOrientation: { type: 'vec3', default: { x: 0, y: 0, z: 0 } }
+      },
+      
+      init: function() {
+        console.log('Camera recenter component initialized');
+        
+        // Store reference to the camera entity
+        this.cameraEl = this.el;
+        
+        // The target rotation should be 0,0,0 which is the initial centered view
+        this.targetRotation = { x: 0, y: 0, z: 0 }; // Initial centered view
+        
+        console.log('Camera recenter component using target rotation:', this.targetRotation);
+        
+        // Track device orientation for mobile
+        this.deviceOrientationOffset = { alpha: 0, beta: 0, gamma: 0 };
+        this.lastDeviceOrientation = null;
+        
+        // Set up device orientation tracking
+        this.setupDeviceOrientationTracking();
+        
+        // Create a global function that can be called from outside A-Frame
+        window.recenterCameraFromAFrame = this.recenter.bind(this);
+        
+        // Listen for recenter events
+        this.cameraEl.addEventListener('recenter', this.recenter.bind(this));
+      },
+      
+      setupDeviceOrientationTracking: function() {
+        // Only set up if we're on a mobile device
+        if (AFRAME.utils.device.isMobile() || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+          console.log('Setting up device orientation tracking for mobile');
+          
+          // Store the handler so we can remove it later if needed
+          this.deviceOrientationHandler = this.handleDeviceOrientation.bind(this);
+          
+          // Add the event listener
+          window.addEventListener('deviceorientation', this.deviceOrientationHandler);
+        }
+      },
+      
+      handleDeviceOrientation: function(event) {
+        // Store the last device orientation
+        this.lastDeviceOrientation = {
+          alpha: event.alpha || 0,
+          beta: event.beta || 0,
+          gamma: event.gamma || 0
+        };
+      },
+      
+      recenter: function() {
+        console.log('A-Frame camera recenter function called');
+        
+        try {
+          // Detect if we're on mobile
+          const isMobile = AFRAME.utils.device.isMobile() || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          console.log('Device detected as:', isMobile ? 'mobile' : 'desktop');
+          
+          // Get the look-controls component
+          const lookControls = this.cameraEl.components['look-controls'];
+          if (!lookControls) {
+            console.error('Look-controls component not found');
+            return false;
+          }
+          
+          // Different approach based on device type
+          if (isMobile) {
+            // On mobile, we need to reset the device orientation offset
+            
+            // APPROACH 1: Reset device orientation offset if available
+            if (this.lastDeviceOrientation && lookControls.hasOwnProperty('deviceOrientationMagicWindowDelta')) {
+              console.log('Using device orientation offset approach');
+              
+              // Store the current device orientation as the new offset
+              this.deviceOrientationOffset = {
+                alpha: this.lastDeviceOrientation.alpha,
+                beta: this.lastDeviceOrientation.beta,
+                gamma: this.lastDeviceOrientation.gamma
+              };
+              
+              // Try to update the magic window delta
+              if (lookControls.deviceOrientationMagicWindowDelta) {
+                lookControls.deviceOrientationMagicWindowDelta.x = 0;
+                lookControls.deviceOrientationMagicWindowDelta.y = 0;
+                lookControls.deviceOrientationMagicWindowDelta.z = 0;
+                console.log('Reset deviceOrientationMagicWindowDelta');
+              }
+            }
+            
+            // APPROACH 2: Completely remove and re-add look-controls
+            console.log('Using remove/re-add look-controls approach for mobile');
+            
+            // Completely disable and detach look-controls temporarily
+            const oldLookControlsData = this.cameraEl.getAttribute('look-controls');
+            this.cameraEl.removeAttribute('look-controls');
+            
+            // Force a tick to ensure the component is fully removed
+            setTimeout(() => {
+              // Set rotation directly (this will stick without look-controls)
+              this.cameraEl.setAttribute('rotation', this.targetRotation);
+              
+              // Re-add look-controls with the new baseline
+              setTimeout(() => {
+                this.cameraEl.setAttribute('look-controls', oldLookControlsData);
+                console.log('Look-controls re-attached with new baseline orientation');
+                
+                // Force an update of the look-controls
+                if (this.cameraEl.components['look-controls'] && 
+                    typeof this.cameraEl.components['look-controls'].updateOrientation === 'function') {
+                  this.cameraEl.components['look-controls'].updateOrientation();
+                }
+              }, 100);
+            }, 100);
+            
+            // APPROACH 3: Try to reset magicWindowOrientation if it exists
+            if (lookControls.magicWindowOrientation) {
+              console.log('Using magicWindowOrientation approach');
+              lookControls.magicWindowOrientation.x = 0;
+              lookControls.magicWindowOrientation.y = 0;
+              console.log('Reset magicWindowOrientation');
+            }
+            
+            // APPROACH 4: Try to use the A-Frame scene directly
+            const scene = document.querySelector('a-scene');
+            if (scene && scene.hasLoaded) {
+              console.log('Using A-Frame scene camera approach');
+              const camera = scene.camera;
+              if (camera) {
+                // Create a new quaternion for centered view
+                const newQuaternion = new THREE.Quaternion();
+                newQuaternion.setFromEuler(new THREE.Euler(
+                  0, // Reset pitch (x) to 0
+                  0, // Reset yaw (y) to 0
+                  0,
+                  'YXZ'
+                ));
+                
+                // Apply the new quaternion
+                camera.quaternion.copy(newQuaternion);
+                console.log('Reset camera quaternion directly to center');
+              }
+            }
+          } else {
+            // On desktop, we can directly manipulate the yawObject and pitchObject
+            if (lookControls.yawObject && lookControls.pitchObject) {
+              // Reset both pitch and yaw to 0
+              lookControls.pitchObject.rotation.x = 0;
+              lookControls.yawObject.rotation.y = 0;
+              console.log('Desktop: Reset yawObject and pitchObject rotation to 0');
+              
+              // Also set the attribute for good measure
+              this.cameraEl.setAttribute('rotation', this.targetRotation);
+            } else {
+              console.warn('Look-controls yawObject or pitchObject not available');
+              
+              // Fallback to direct attribute setting
+              this.cameraEl.setAttribute('rotation', this.targetRotation);
+            }
+          }
+          
+          console.log('Camera recentering completed from A-Frame component');
+          return true;
+        } catch (e) {
+          console.error('Error in A-Frame camera recenter:', e);
+          return false;
+        }
+      }
+    });
+  </script>
 </body>
 </html>

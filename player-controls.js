@@ -41,8 +41,9 @@ function initializePlayer() {
     void playlistContainer.offsetHeight;
   }
   
-  // Load playlist data from JSON
-  loadPlaylistData();
+  // Preload playlist data immediately
+  console.log('Pre-loading playlist data...');
+  preloadPlaylistData();
   
   // Set the active media element to audio by default
   activeMediaElement = audio;
@@ -97,6 +98,83 @@ function initializePlayer() {
   console.log('Player initialization complete');
 }
 
+/**
+ * Preload playlist data to ensure it's ready when the user clicks the playlist button
+ */
+function preloadPlaylistData() {
+  console.log('Preloading playlist data from playlist.json');
+  
+  // Add a loading indicator to the playlist
+  if (playlistTracks) {
+    playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title">Loading tracks...</div></div></li>';
+  }
+  
+  // Start fetching the playlist data immediately
+  fetch('playlist.json')
+    .then(response => {
+      console.log('Playlist preload fetch response status:', response.status);
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Playlist data preloaded successfully:', data);
+      
+      // Verify that the data has the expected structure
+      if (!data || !data.tracks || !Array.isArray(data.tracks) || data.tracks.length === 0) {
+        throw new Error('Invalid playlist data format or empty playlist');
+      }
+      
+      // Map the tracks from the JSON to our internal format
+      playlist = data.tracks.map(track => ({
+        id: track.chapter,
+        title: track.title,
+        duration: formatDuration(track),
+        active: currentTrackIndex !== -1 && track.id === playlist[currentTrackIndex]?.id,
+        audioSrc: track.audio_url,
+        videoSrc: track.XR_Scene,
+        artworkUrl: track.artwork_url,
+        playlistName: track.playlist,
+        isAR: track.IsAR
+      }));
+      
+      console.log(`Preloaded ${playlist.length} tracks from playlist.json`);
+      
+      // Set playlist title and subtitle if available
+      if (playlist.length > 0) {
+        currentPlaylistTitle = "Chinatown Audio Tour";
+        currentPlaylistSubtitle = playlist[0].playlistName || "Look Up";
+        
+        // Update playlist header
+        const playlistTitle = document.querySelector('.playlist-title');
+        const playlistSubtitle = document.querySelector('.playlist-subtitle');
+        
+        if (playlistTitle) {
+          playlistTitle.textContent = currentPlaylistTitle;
+        }
+        
+        if (playlistSubtitle) {
+          playlistSubtitle.textContent = currentPlaylistSubtitle;
+        }
+      }
+      
+      // Populate the playlist UI in advance
+      populatePlaylist();
+      
+      // Mark playlist as preloaded
+      window.playlistPreloaded = true;
+      console.log('Playlist preloading complete');
+    })
+    .catch(error => {
+      console.error('Error preloading playlist data:', error);
+      // Fallback to hardcoded playlist if JSON fails to load
+      initializeDefaultPlaylist();
+      // Mark playlist as preloaded (using default data)
+      window.playlistPreloaded = true;
+    });
+}
+
 // Global variables for playlist elements
 let playlistContainer;
 let playlistTracks;
@@ -106,6 +184,8 @@ let currentPlaylistSubtitle = "";
 let currentTrackIndex = 0;
 let isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+let resetCameraBtn;
+let recenterCameraBtn; // Add new global variable for recenter camera button
 
 document.addEventListener('DOMContentLoaded', function () {
   // Get DOM elements
@@ -115,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const rewindBtn = document.getElementById('rewindBtn');
   const forwardBtn = document.getElementById('forwardBtn');
   const muteBtn = document.getElementById('muteBtn');
-  const resetCameraBtn = document.getElementById('resetCameraBtn');
+  resetCameraBtn = document.getElementById('resetCameraBtn');
   const viewXRBtn = document.getElementById('viewXRBtn');
   const exitXRBtn = document.getElementById('exitXRBtn');
   const message = document.getElementById('message');
@@ -142,6 +222,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const playlistOverlay = document.getElementById('playlistOverlay');
   const playlistClose = document.getElementById('playlistClose');
   playlistTracks = document.getElementById('playlistTracks');
+  recenterCameraBtn = document.getElementById('recenterCameraBtn'); // Initialize the recenter camera button
   
   let isScrubbing = false;
   let isVideoPreloaded = false;
@@ -523,6 +604,16 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Update UI to reflect current mode
     updateUIForCurrentMode();
+    
+    // Show camera reset button
+    if (resetCameraBtn && resetCameraBtn.parentElement) {
+        resetCameraBtn.parentElement.classList.add('visible');
+    }
+    
+    // Show recenter camera button
+    if (recenterCameraBtn) {
+        recenterCameraBtn.classList.add('visible');
+    }
   }
   
   /**
@@ -598,6 +689,16 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Update UI to reflect current mode
     updateUIForCurrentMode();
+    
+    // Hide camera reset button
+    if (resetCameraBtn && resetCameraBtn.parentElement) {
+        resetCameraBtn.parentElement.classList.remove('visible');
+    }
+    
+    // Hide recenter camera button
+    if (recenterCameraBtn) {
+        recenterCameraBtn.classList.remove('visible');
+    }
   }
   
   /**
@@ -1504,6 +1605,10 @@ document.addEventListener('DOMContentLoaded', function () {
         // Populate the playlist UI
         populatePlaylist();
         
+        // Mark playlist as preloaded
+        window.playlistPreloaded = true;
+        console.log('Playlist loading complete and marked as preloaded');
+        
         // Load the first track by default
         if (playlist.length > 0) {
           console.log('Loading first track from playlist:', playlist[0].title);
@@ -1557,6 +1662,10 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Fallback to hardcoded playlist if JSON fails to load
         initializeDefaultPlaylist();
+        
+        // Mark playlist as preloaded (using default data)
+        window.playlistPreloaded = true;
+        console.log('Fallback playlist loaded and marked as preloaded');
       });
   }
   
@@ -1887,13 +1996,13 @@ document.addEventListener('DOMContentLoaded', function () {
       // Open playlist
       console.log('Opening playlist');
       
-      // Verify that the playlist has tracks before opening
-      if (!playlist || playlist.length === 0 || playlistTracks.children.length === 0) {
-        console.log('Playlist is empty, attempting to reload playlist data');
-        // If the playlist is empty, try to reload it
-        loadPlaylistData();
+      // Check if playlist is already preloaded
+      if (window.playlistPreloaded && playlist && playlist.length > 0 && playlistTracks.children.length > 0) {
+        console.log('Using preloaded playlist data');
       } else {
-        console.log(`Playlist has ${playlist.length} tracks and ${playlistTracks.children.length} UI elements`);
+        // If the playlist is empty or not preloaded, try to reload it
+        console.log('Playlist not preloaded or empty, attempting to reload playlist data');
+        loadPlaylistData();
       }
       
       // Make sure the playlist is visible before adding the open class
@@ -1928,21 +2037,20 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /**
-   * Force reload of the playlist data and UI
+   * Force reload of playlist data
    */
   function forceReloadPlaylist() {
     console.log('Forcing playlist reload');
     
-    // Show loading indicator in the playlist
+    // Show loading indicator
     if (playlistTracks) {
-      playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title loading">Loading tracks...</div></div></li>';
+      playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title">Loading tracks...</div></div></li>';
     }
     
-    // Fetch the playlist data again
     fetch('playlist.json')
       .then(response => {
         if (!response.ok) {
-          throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+          throw new Error(`Network response was not ok: ${response.status}`);
         }
         return response.json();
       })
@@ -1969,6 +2077,10 @@ document.addEventListener('DOMContentLoaded', function () {
         // Populate the playlist UI
         populatePlaylist();
         
+        // Mark playlist as preloaded
+        window.playlistPreloaded = true;
+        console.log('Playlist force reload complete and marked as preloaded');
+        
         // Scroll to the active track
         setTimeout(() => {
           const activeTrack = playlistTracks.querySelector('.playlist-track.active');
@@ -1987,6 +2099,10 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Fallback to default playlist
         initializeDefaultPlaylist();
+        
+        // Mark playlist as preloaded (using default data)
+        window.playlistPreloaded = true;
+        console.log('Fallback playlist loaded after force reload and marked as preloaded');
       });
   }
 
@@ -2002,7 +2118,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // If the playlist is now open and empty, force a reload
     if (playlistContainer.classList.contains('open') && 
-        (!playlist || playlist.length === 0 || playlistTracks.children.length === 0 || 
+        (!window.playlistPreloaded || !playlist || playlist.length === 0 || playlistTracks.children.length === 0 || 
          playlistTracks.children.length === 1 && playlistTracks.children[0].textContent.includes('Loading'))) {
       forceReloadPlaylist();
     }
@@ -2228,6 +2344,61 @@ document.addEventListener('DOMContentLoaded', function () {
     // Close the playlist
     togglePlaylist();
   }
+
+  // Add event listener for recenter camera button
+  if (recenterCameraBtn) {
+    console.log('Adding click event listener to recenter camera button');
+    
+    recenterCameraBtn.addEventListener('click', function(event) {
+      console.log('Recenter camera button clicked', event);
+      
+      // Add a small delay to ensure A-Frame has fully initialized
+      setTimeout(function() {
+        recenterCamera();
+      }, 50);
+    });
+    
+    // Also add touch events for mobile
+    recenterCameraBtn.addEventListener('touchend', function(event) {
+      console.log('Recenter camera button touched', event);
+      event.preventDefault(); // Prevent default touch behavior
+      
+      // Add a small delay to ensure A-Frame has fully initialized
+      setTimeout(function() {
+        recenterCamera();
+      }, 50);
+    });
+  } else {
+    console.error('Recenter camera button not found in DOM');
+  }
+
+  // Calculate player controls dimensions and position for recenter button positioning
+  if (playerControls) {
+    const updatePlayerControlsMetrics = () => {
+      // Get the height of the player controls
+      const height = playerControls.offsetHeight;
+      document.documentElement.style.setProperty('--player-controls-height', `${height}px`);
+      
+      // Get the bottom position of the player controls
+      const computedStyle = window.getComputedStyle(playerControls);
+      const bottom = computedStyle.getPropertyValue('bottom');
+      document.documentElement.style.setProperty('--player-controls-bottom', bottom);
+      
+      console.log(`Player controls metrics updated: height=${height}px, bottom=${bottom}`);
+    };
+    
+    // Initial calculation
+    updatePlayerControlsMetrics();
+    
+    // Update on resize
+    window.addEventListener('resize', updatePlayerControlsMetrics);
+    
+    // Update when orientation changes
+    window.addEventListener('orientationchange', () => {
+      // Small delay to ensure the browser has updated layout after orientation change
+      setTimeout(updatePlayerControlsMetrics, 300);
+    });
+  }
 }); 
 
 /**
@@ -2334,3 +2505,148 @@ window.addEventListener('orientationchange', function() {
     }
   }, 300);
 });
+
+// Function to get the latest camera entity with components
+function getLatestCameraEntity() {
+  // Try to get the camera entity by ID first
+  let camera = document.getElementById('cameraEntity');
+  
+  // If not found by ID, try to query for any camera entity
+  if (!camera) {
+    camera = document.querySelector('a-entity[camera]');
+  }
+  
+  // If still not found, log an error
+  if (!camera) {
+    console.error('Camera entity not found by ID or query');
+    return null;
+  }
+  
+  // Check if A-Frame has initialized the components
+  if (!camera.components || !camera.components['look-controls']) {
+    console.warn('Camera entity found but look-controls not initialized yet');
+  }
+  
+  return camera;
+}
+
+// Track if recentering is in progress to prevent multiple calls
+let isRecenteringInProgress = false;
+
+// Function to recenter the camera (reset heading only)
+function recenterCamera() {
+    // Prevent multiple calls in quick succession
+    if (isRecenteringInProgress) {
+        console.log('Recentering already in progress, ignoring call');
+        return;
+    }
+    
+    console.log('Recenter camera function called from player-controls.js');
+    isRecenteringInProgress = true;
+    
+    // Show a brief message immediately for user feedback
+    message.textContent = "Recentering view...";
+    message.style.display = "block";
+    
+    try {
+        // First try to use our A-Frame component's global function
+        if (typeof window.recenterCameraFromAFrame === 'function') {
+            console.log('Using A-Frame component for recentering');
+            const result = window.recenterCameraFromAFrame();
+            
+            if (result) {
+                // Update message
+                setTimeout(() => {
+                    message.textContent = "View recentered";
+                    setTimeout(() => message.style.display = "none", 1500);
+                }, 500);
+                
+                console.log('Camera recentering completed via A-Frame component');
+                
+                // Reset the flag after a delay to ensure the operation completes
+                setTimeout(() => {
+                    isRecenteringInProgress = false;
+                }, 1000);
+                return;
+            }
+        }
+        
+        // Fallback to direct manipulation if the A-Frame component method failed
+        console.log('Falling back to direct manipulation for recentering');
+        
+        // Get the camera entity
+        const camera = document.querySelector('[camera]');
+        if (!camera) {
+            console.error('Camera entity not found');
+            isRecenteringInProgress = false;
+            return;
+        }
+        
+        // Emit the recenter event that our component listens for
+        camera.emit('recenter');
+        
+        // Update message
+        setTimeout(() => {
+            message.textContent = "View recentered";
+            setTimeout(() => message.style.display = "none", 1500);
+        }, 500);
+        
+        console.log('Camera recentering completed via event emission');
+    } catch (e) {
+        console.error('Error in recenterCamera:', e);
+        
+        // Last resort fallback
+        try {
+            const camera = document.querySelector('[camera]');
+            if (camera) {
+                // Detect if we're on mobile
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                // Set the target rotation to 0,0,0 for complete centering
+                const targetRotation = { x: 0, y: 0, z: 0 };
+                
+                if (isMobile) {
+                    // On mobile, try to completely remove and re-add the look-controls
+                    const oldLookControlsData = camera.getAttribute('look-controls');
+                    camera.removeAttribute('look-controls');
+                    
+                    // Set rotation directly without look-controls
+                    setTimeout(() => {
+                        camera.setAttribute('rotation', targetRotation);
+                        
+                        // Re-add look-controls after setting rotation
+                        setTimeout(() => {
+                            camera.setAttribute('look-controls', oldLookControlsData);
+                        }, 100);
+                    }, 50);
+                } else {
+                    // On desktop, just set the rotation
+                    camera.setAttribute('rotation', targetRotation);
+                    
+                    // Also try to directly manipulate the look-controls if available
+                    if (camera.components && camera.components['look-controls']) {
+                        const lookControls = camera.components['look-controls'];
+                        if (lookControls.pitchObject) lookControls.pitchObject.rotation.x = 0;
+                        if (lookControls.yawObject) lookControls.yawObject.rotation.y = 0;
+                    }
+                }
+                
+                console.log('Applied last resort camera recentering to center level');
+                
+                // Update message
+                setTimeout(() => {
+                    message.textContent = "View recentered";
+                    setTimeout(() => message.style.display = "none", 1500);
+                }, 500);
+            }
+        } catch (finalError) {
+            console.error('Final fallback for camera recentering failed:', finalError);
+            message.style.display = "none";
+        }
+    }
+    
+    // Reset the flag after a delay to ensure the operation completes
+    setTimeout(() => {
+        isRecenteringInProgress = false;
+    }, 1000);
+}
