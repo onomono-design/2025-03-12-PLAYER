@@ -371,6 +371,7 @@ body.mobile-device .time-display {
   height: 5px;
   display: flex;
   align-items: center;
+  cursor: pointer;
 }
 
 .scrubber {
@@ -409,6 +410,9 @@ body.mobile-device .time-display {
   cursor: pointer;
   position: relative;
   z-index: 3;
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transform-origin: center;
+  will-change: transform, box-shadow;
 }
 
 .scrubber::-moz-range-thumb {
@@ -420,6 +424,31 @@ body.mobile-device .time-display {
   border: none;
   position: relative;
   z-index: 3;
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transform-origin: center;
+  will-change: transform, box-shadow;
+}
+
+/* Add active state for when the user is dragging the scrubber */
+.scrubber:active::-webkit-slider-thumb {
+  transform: scale(1.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.scrubber:active::-moz-range-thumb {
+  transform: scale(1.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Add hover state for better UX */
+.scrubber:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.scrubber:hover::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 .buttons-container {
@@ -1066,5 +1095,61 @@ body.mobile-device.landscape .recenter-camera-button {
     width: 40px;
     height: 40px;
     font-size: 22px;
+  }
+}
+
+/* Add scrubbing state for better control during drag */
+body.scrubbing .scrubber::-webkit-slider-thumb {
+  transform: scale(1.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.scrubbing .scrubber::-moz-range-thumb {
+  transform: scale(1.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Improve scrubber track appearance */
+.scrubber-wrapper {
+  position: relative;
+  flex-grow: 1;
+  height: 5px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Make the scrubber area larger for better touch targets on mobile */
+@media (max-width: 480px) {
+  .scrubber-wrapper {
+    height: 10px; /* Taller touch target */
+  }
+  
+  .scrubber {
+    height: 5px; /* Visual height remains the same */
+  }
+  
+  /* Ensure the thumb is large enough to be easily grabbed on touch devices */
+  .scrubber::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .scrubber::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* Make the active state even more pronounced on mobile */
+  body.scrubbing .scrubber::-webkit-slider-thumb,
+  .scrubber:active::-webkit-slider-thumb {
+    transform: scale(1.4);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.scrubbing .scrubber::-moz-range-thumb,
+  .scrubber:active::-moz-range-thumb {
+    transform: scale(1.4);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
   }
 } 

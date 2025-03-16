@@ -2399,6 +2399,34 @@ document.addEventListener('DOMContentLoaded', function () {
       setTimeout(updatePlayerControlsMetrics, 300);
     });
   }
+
+  // Add enhanced scrubber interaction
+  scrubber.addEventListener('mousedown', function() {
+    console.log('Scrubber drag started');
+    // Add a class to the body to indicate scrubbing is active
+    document.body.classList.add('scrubbing');
+  });
+
+  // Handle mouseup on the document to ensure we catch the release even if outside the scrubber
+  document.addEventListener('mouseup', function() {
+    if (document.body.classList.contains('scrubbing')) {
+      console.log('Scrubber drag ended');
+      document.body.classList.remove('scrubbing');
+    }
+  });
+
+  // Add touch support for mobile devices
+  scrubber.addEventListener('touchstart', function() {
+    console.log('Scrubber touch started');
+    document.body.classList.add('scrubbing');
+  });
+
+  document.addEventListener('touchend', function() {
+    if (document.body.classList.contains('scrubbing')) {
+      console.log('Scrubber touch ended');
+      document.body.classList.remove('scrubbing');
+    }
+  });
 }); 
 
 /**
