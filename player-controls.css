@@ -458,6 +458,19 @@ body.mobile-device .time-display {
   will-change: transform, box-shadow;
 }
 
+/* Mobile-specific thumb adjustments */
+body.mobile-device .scrubber::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  /* Ensure the thumb is vertically centered */
+  margin-top: -6.5px; /* Half of (thumb height - track height) */
+}
+
+body.mobile-device .scrubber::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+}
+
 /* Hover state for scrubber thumb */
 .scrubber:hover::-webkit-slider-thumb {
   transform: scale(1.1);
@@ -1241,6 +1254,10 @@ body.scrubbing .scrubber::-moz-range-thumb {
     height: 5px; /* Visual height remains the same */
   }
   
+  .scrubber-progress {
+    top: 2.5px; /* Center the progress bar vertically in the taller wrapper */
+  }
+  
   /* Ensure the thumb is large enough to be easily grabbed on touch devices */
   .scrubber::-webkit-slider-thumb {
     width: 18px;
@@ -1438,4 +1455,35 @@ body.scrubbing .scrubber::-moz-range-thumb {
     max-width: 98%;
     width: calc(100% - 10px);
   }
+}
+
+/* Ensure proper alignment on mobile devices */
+body.mobile-device .scrubber-wrapper {
+  height: 10px; /* Taller touch target for all mobile devices */
+  position: relative;
+}
+
+body.mobile-device .scrubber {
+  height: 5px; /* Visual height remains the same */
+  top: 2.5px; /* Center the scrubber in the wrapper */
+  margin: 0; /* Remove any default margins */
+}
+
+body.mobile-device .scrubber-progress {
+  top: 2.5px; /* Center the progress bar in the wrapper */
+  height: 5px; /* Ensure consistent height */
+  pointer-events: none; /* Make sure it doesn't interfere with scrubber interaction */
+}
+
+/* iOS-specific adjustments */
+body.ios-device .scrubber-wrapper {
+  height: 12px; /* Slightly taller for iOS */
+}
+
+body.ios-device .scrubber {
+  top: 3.5px; /* Adjusted for iOS */
+}
+
+body.ios-device .scrubber-progress {
+  top: 3.5px; /* Adjusted for iOS */
 } 
