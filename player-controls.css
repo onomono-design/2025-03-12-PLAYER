@@ -343,16 +343,14 @@ body.mobile-device .video-info {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* Completely revised scrubber implementation for better alignment */
 .scrubber-container {
   width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  /* Remove margin-bottom as we're using gap in the parent */
   margin-bottom: 0;
-  /* Ensure time displays don't get squeezed too much */
   min-width: 0;
-  /* Align with buttons */
   padding: 0;
   box-sizing: border-box;
 }
@@ -361,7 +359,7 @@ body.mobile-device.landscape .scrubber-container {
   margin-bottom: 10px;
 }
 
-/* Align time displays with buttons */
+/* Time display styles */
 .time-display {
   color: #333;
   font-size: 12px;
@@ -396,12 +394,13 @@ body.mobile-device .time-display {
 .scrubber-wrapper {
   position: relative;
   flex-grow: 1;
-  height: 5px;
+  height: 20px; /* Taller wrapper to provide better touch target */
   display: flex;
   align-items: center;
   cursor: pointer;
 }
 
+/* Base track styling */
 .scrubber {
   position: absolute;
   width: 100%;
@@ -414,21 +413,26 @@ body.mobile-device .time-display {
   margin: 0;
   padding: 0;
   z-index: 2;
+  top: 50%;
+  transform: translateY(-50%); /* Center vertically */
+  left: 0;
 }
 
+/* Progress bar styling */
 .scrubber-progress {
   position: absolute;
-  top: 0;
-  left: 0;
   height: 5px;
   width: 0;
   background-color: rgba(0, 0, 0, 0.6);
   border-radius: 5px 0 0 5px;
   pointer-events: none;
   z-index: 1;
+  top: 50%;
+  transform: translateY(-50%); /* Center vertically */
+  left: 0;
 }
 
-/* Update scrubber notch styling to differentiate hover and grab states */
+/* Thumb styling for WebKit browsers */
 .scrubber::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -442,8 +446,10 @@ body.mobile-device .time-display {
   transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   transform-origin: center;
   will-change: transform, box-shadow;
+  /* No margin-top needed as we're using transform for centering */
 }
 
+/* Thumb styling for Firefox */
 .scrubber::-moz-range-thumb {
   width: 15px;
   height: 15px;
@@ -458,12 +464,19 @@ body.mobile-device .time-display {
   will-change: transform, box-shadow;
 }
 
-/* Mobile-specific thumb adjustments */
+/* Mobile-specific adjustments */
+body.mobile-device .scrubber-wrapper {
+  height: 24px; /* Even taller for mobile */
+}
+
+body.mobile-device .scrubber,
+body.mobile-device .scrubber-progress {
+  height: 5px; /* Keep consistent height */
+}
+
 body.mobile-device .scrubber::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
-  /* Ensure the thumb is vertically centered */
-  margin-top: -6.5px; /* Half of (thumb height - track height) */
 }
 
 body.mobile-device .scrubber::-moz-range-thumb {
@@ -471,7 +484,12 @@ body.mobile-device .scrubber::-moz-range-thumb {
   height: 18px;
 }
 
-/* Hover state for scrubber thumb */
+/* iOS-specific adjustments */
+body.ios-device .scrubber-wrapper {
+  height: 28px; /* Extra tall for iOS */
+}
+
+/* Hover and active states */
 .scrubber:hover::-webkit-slider-thumb {
   transform: scale(1.1);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
@@ -482,7 +500,6 @@ body.mobile-device .scrubber::-moz-range-thumb {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Active state for scrubber thumb - make it larger than hover */
 .scrubber:active::-webkit-slider-thumb {
   transform: scale(1.5);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
@@ -504,7 +521,7 @@ body.scrubbing .scrubber::-moz-range-thumb {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Make the active state even more pronounced on mobile */
+/* Enhanced mobile active states */
 @media (max-width: 480px) {
   body.scrubbing .scrubber::-webkit-slider-thumb,
   .scrubber:active::-webkit-slider-thumb {
@@ -776,7 +793,10 @@ body.mobile-device #playPauseBtn {
 
 /* Extra narrow viewport adjustments */
 @media (max-aspect-ratio: 3/8) {
-  /* Removed */
+  .playlist-container {
+    max-width: 98%;
+    width: calc(100% - 10px);
+  }
 }
 
 /* Playlist UI Styles */
