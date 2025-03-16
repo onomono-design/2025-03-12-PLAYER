@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>iFrame Container</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Media Player</title>
+  <link rel="stylesheet" href="player-controls.css">
+  <link rel="stylesheet" href="player-layout.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <!-- Add Figtree font from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" src="app.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -11,6 +19,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      font-family: 'Figtree', sans-serif;
     }
     
     body {
@@ -52,7 +61,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.9);
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -64,51 +73,201 @@
       box-sizing: border-box;
     }
     
+    .permission-content {
+      max-width: 500px;
+      background-color: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 0.8s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
     #permission-overlay h2 {
       margin-top: 0;
-      font-size: 24px;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 15px;
     }
     
     #permission-overlay p {
-      margin: 20px 0;
+      margin: 15px 0;
       font-size: 16px;
-      max-width: 600px;
+      line-height: 1.6;
+      font-weight: 400;
+      opacity: 0.9;
+    }
+    
+    .permission-steps {
+      text-align: left;
+      margin: 20px 0;
+      padding-left: 20px;
+    }
+    
+    .permission-steps li {
+      margin-bottom: 10px;
       line-height: 1.5;
     }
     
     #permission-button {
-      background-color: #4CAF50;
-      color: white;
+      background-color: #ffffff;
+      color: #1a2a6c;
       border: none;
-      padding: 15px 30px;
+      padding: 16px 32px;
       font-size: 18px;
-      border-radius: 5px;
+      font-weight: 600;
+      font-family: 'Figtree', sans-serif;
+      border-radius: 50px;
       cursor: pointer;
-      margin-top: 20px;
-      transition: background-color 0.3s;
+      margin-top: 25px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+      }
     }
     
     #permission-button:hover {
-      background-color: #45a049;
+      background-color: #f0f0f0;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      animation: none;
+    }
+    
+    #permission-button:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     }
     
     .hidden {
       display: none !important;
     }
     
-    .icon {
-      font-size: 48px;
+    .icon-container {
       margin-bottom: 20px;
+      width: 80px;
+      height: 80px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .icon {
+      font-size: 40px;
+    }
+    
+    .device-tilt-animation {
+      width: 60px;
+      height: 100px;
+      background-color: #333;
+      border-radius: 10px;
+      position: relative;
+      margin: 20px auto;
+      animation: tiltDevice 3s infinite ease-in-out;
+      border: 2px solid #fff;
+    }
+    
+    @keyframes tiltDevice {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(-20deg); }
+      50% { transform: rotate(0deg); }
+      75% { transform: rotate(20deg); }
+      100% { transform: rotate(0deg); }
+    }
+    
+    .device-screen {
+      width: 50px;
+      height: 80px;
+      background: linear-gradient(45deg, #4a8fe7, #63e7b0);
+      position: absolute;
+      top: 10px;
+      left: 5px;
+      border-radius: 5px;
+    }
+    
+    .feature-list {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      margin: 20px 0;
+    }
+    
+    .feature-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+    }
+    
+    .feature-item i {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #fdbb2d;
+    }
+    
+    .feature-item span {
+      font-size: 14px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <div id="permission-overlay">
-    <div class="icon">📱</div>
-    <h2>360° Experience</h2>
-    <p>This experience uses your device's orientation to let you look around in 360°. Please grant permission when prompted.</p>
-    <p>For the best experience, please allow access to motion and orientation sensors.</p>
-    <button id="permission-button">Start Experience</button>
+    <div class="permission-content">
+      <div class="icon-container">
+        <i class="icon fas fa-vr-cardboard"></i>
+      </div>
+      <h2>Immersive 360° Experience</h2>
+      
+      <div class="device-tilt-animation">
+        <div class="device-screen"></div>
+      </div>
+      
+      <p>This experience uses your device's motion sensors to create an immersive 360° environment.</p>
+      
+      <div class="feature-list">
+        <div class="feature-item">
+          <i class="fas fa-music"></i>
+          <span>High-quality audio</span>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-vr-cardboard"></i>
+          <span>360° visuals</span>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-mobile-alt"></i>
+          <span>Motion controls</span>
+        </div>
+      </div>
+      
+      <div class="permission-steps">
+        <p><strong>When prompted:</strong></p>
+        <ul>
+          <li>Tap "Allow" to enable motion and orientation access</li>
+          <li>For the best experience, use headphones and move around</li>
+        </ul>
+      </div>
+      
+      <button id="permission-button">Enable 360° Experience</button>
+    </div>
   </div>
 
   <div class="iframe-container hidden" id="iframe-container">
@@ -135,6 +294,10 @@
       
       // On mobile, wait for permission
       permissionButton.addEventListener('click', function() {
+        // Visual feedback on button click
+        permissionButton.textContent = "Requesting Access...";
+        permissionButton.style.opacity = "0.8";
+        
         // Request device orientation permission
         if (typeof DeviceOrientationEvent !== 'undefined' && 
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -144,14 +307,20 @@
               if (permissionState === 'granted') {
                 startExperience();
               } else {
-                alert('Permission denied. You may not be able to look around using device motion.');
-                startExperience(); // Start anyway, but it won't have motion controls
+                permissionButton.textContent = "Continue Anyway";
+                permissionButton.style.opacity = "1";
+                alert('Permission denied. You can still experience the content, but won\'t be able to look around using device motion.');
+                // Add a second click handler for the "Continue Anyway" option
+                permissionButton.addEventListener('click', startExperience, { once: true });
               }
             })
             .catch(error => {
               console.error('Error requesting device orientation permission:', error);
-              alert('Error requesting permission. The experience may not work correctly.');
-              startExperience(); // Start anyway as a fallback
+              permissionButton.textContent = "Continue Anyway";
+              permissionButton.style.opacity = "1";
+              alert('We couldn\'t access your device motion sensors. You can still experience the content but with limited interactivity.');
+              // Add a second click handler for the "Continue Anyway" option
+              permissionButton.addEventListener('click', startExperience, { once: true });
             });
         } else {
           // For non-iOS or older iOS that doesn't need explicit permission
@@ -160,14 +329,21 @@
       });
       
       function startExperience() {
-        // Hide the permission overlay
-        permissionOverlay.classList.add('hidden');
+        // Add a fade-out animation to the permission overlay
+        permissionOverlay.style.transition = "opacity 0.8s ease-out";
+        permissionOverlay.style.opacity = "0";
         
-        // Show the iframe container
-        iframeContainer.classList.remove('hidden');
-        
-        // Set the iframe source to load the content
-        contentFrame.src = "360video.html";
+        // Wait for the animation to complete before hiding
+        setTimeout(() => {
+          // Hide the permission overlay
+          permissionOverlay.classList.add('hidden');
+          
+          // Show the iframe container
+          iframeContainer.classList.remove('hidden');
+          
+          // Set the iframe source to load the content
+          contentFrame.src = "360video.html";
+        }, 800);
       }
     });
   </script>

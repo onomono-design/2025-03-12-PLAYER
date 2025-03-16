@@ -1,0 +1,290 @@
+/**
+ * Player Layout Styles
+ * Contains styles for layout optimizations, mobile-specific layouts, and scrubber improvements
+ */
+
+/* Base font and typography */
+* {
+  font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Mobile-specific layout styles */
+.mobile-optimized .mobile-top-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 100;
+  box-sizing: border-box;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease;
+}
+
+.mobile-optimized .mobile-bottom-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 100;
+  box-sizing: border-box;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease;
+}
+
+/* Hide mobile containers when scrolling down (optional UX enhancement) */
+.mobile-optimized.scrolling-down .mobile-top-container {
+  transform: translateY(-100%);
+}
+
+.mobile-optimized.scrolling-down .mobile-bottom-container {
+  transform: translateY(100%);
+}
+
+/* Scrubber improvements */
+.scrubber-container {
+  position: relative;
+  width: 100%;
+  padding: 15px 0;
+  margin: 10px 0;
+}
+
+.progress-region {
+  position: absolute;
+  height: 4px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.buffered-progress {
+  position: absolute;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.4);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.played-progress {
+  position: absolute;
+  height: 100%;
+  background-color: #1DB954; /* Spotify green or your brand color */
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+/* Custom scrubber styling */
+input[type="range"].scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
+
+/* Remove default thumb */
+input[type="range"].scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+input[type="range"].scrubber::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border: none;
+}
+
+/* Custom scrubber notch */
+.scrubber-notch {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  pointer-events: none; /* Allow clicks to pass through to the scrubber */
+  transition: transform 0.1s ease;
+}
+
+/* Hover effect for scrubber notch */
+.scrubber-container:hover .scrubber-notch {
+  transform: translateY(-50%) scale(1.2);
+}
+
+/* Time display positioning */
+.time-display {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 4;
+  transition: opacity 0.2s ease;
+}
+
+/* Scrubber preview on hover */
+.scrubber-preview {
+  position: absolute;
+  display: none;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  bottom: 30px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 5;
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  /* Increase touch target sizes on mobile */
+  .mobile-optimized .control-button {
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0 8px;
+  }
+  
+  .mobile-optimized .scrubber-notch {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .mobile-optimized .progress-region {
+    height: 6px;
+  }
+  
+  /* Adjust album artwork size on mobile */
+  .mobile-optimized .album-artwork {
+    width: 80px;
+    height: 80px;
+  }
+  
+  /* Improve track info readability */
+  .mobile-optimized .track-info {
+    margin-left: 10px;
+  }
+  
+  .mobile-optimized .track-title {
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  .mobile-optimized .track-artist {
+    font-size: 14px;
+    opacity: 0.8;
+  }
+}
+
+/* Iframe-specific styles */
+.in-iframe .player-controls {
+  /* Styles will be dynamically set by JavaScript */
+  transition: padding 0.3s ease, width 0.3s ease;
+}
+
+/* Animation for mode switching */
+.fade-in {
+  animation: fadeIn 0.3s forwards;
+}
+
+.fade-out {
+  animation: fadeOut 0.3s forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Playlist track styles and interactions */
+.playlist-track {
+  position: relative;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  overflow: hidden;
+}
+
+.playlist-track:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.playlist-track.active {
+  background-color: rgba(29, 185, 84, 0.2); /* Spotify green with transparency */
+  border-left: 3px solid #1DB954;
+}
+
+/* Click feedback animation */
+.playlist-track:active {
+  transform: scale(0.98);
+}
+
+/* Ripple effect for track click */
+.playlist-track .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(0);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Loading indicator for tracks */
+.playlist-track.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #1DB954, transparent);
+  animation: loading-animation 1.5s infinite;
+}
+
+@keyframes loading-animation {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+} 

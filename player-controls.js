@@ -20,82 +20,187 @@
 
 console.log('Player controls script loaded');
 
+/**
+ * Enhanced error logging system
+ */
+const ErrorLogger = {
+  // Store errors for potential reporting
+  errors: [],
+  
+  // Maximum number of errors to store
+  maxErrors: 50,
+  
+  // Log an error with context
+  logError: function(error, context = {}) {
+    const timestamp = new Date().toISOString();
+    const errorObj = {
+      timestamp,
+      message: error.message || String(error),
+      stack: error.stack,
+      context: {
+        ...context,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        viewportSize: `${window.innerWidth}x${window.innerHeight}`,
+        isXRMode,
+        isMobileDevice,
+        currentTrackIndex,
+        currentPlaylistView
+      }
+    };
+    
+    // Add to errors array
+    this.errors.push(errorObj);
+    
+    // Trim array if it gets too large
+    if (this.errors.length > this.maxErrors) {
+      this.errors = this.errors.slice(-this.maxErrors);
+    }
+    
+    // Log to console
+    console.error('Player Error:', errorObj);
+    
+    return errorObj;
+  },
+  
+  // Handle a runtime error
+  handleError: function(error, context = {}) {
+    const errorObj = this.logError(error, context);
+    
+    // Show user-friendly message
+    message.textContent = "An error occurred. Please try again.";
+    message.style.display = "block";
+    
+    // Hide message after delay
+    setTimeout(() => {
+      if (message.textContent === "An error occurred. Please try again.") {
+        message.style.display = "none";
+      }
+    }, 5000);
+    
+    return errorObj;
+  },
+  
+  // Get all logged errors
+  getErrors: function() {
+    return this.errors;
+  },
+  
+  // Clear error log
+  clearErrors: function() {
+    this.errors = [];
+    console.log('Error log cleared');
+  }
+};
+
+// Set up global error handler
+window.addEventListener('error', function(event) {
+  ErrorLogger.handleError(event.error || new Error(event.message), {
+    source: event.filename,
+    line: event.lineno,
+    column: event.colno,
+    type: 'uncaught'
+  });
+});
+
+// Set up promise rejection handler
+window.addEventListener('unhandledrejection', function(event) {
+  ErrorLogger.handleError(event.reason || new Error('Unhandled Promise rejection'), {
+    type: 'unhandledrejection'
+  });
+});
+
 // Initialize the player
 function initializePlayer() {
   console.log('Initializing player...');
   
-  // Initialize playlist container positioning
-  if (playlistContainer) {
-    // Ensure the playlist container is properly positioned from the start
-    // This prevents the initial offscreen rendering when first opened
-    console.log('Setting initial playlist container visibility to hidden');
-    playlistContainer.style.visibility = 'hidden';
+  try {
+    // Set up network monitoring
+    setupNetworkMonitoring();
     
-    // Set initial positioning
-    playlistContainer.style.position = 'fixed';
-    playlistContainer.style.top = '50%';
-    playlistContainer.style.left = '50%';
-    playlistContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
-    
-    // Force a reflow
-    void playlistContainer.offsetHeight;
-  }
-  
-  // Preload playlist data immediately
-  console.log('Pre-loading playlist data...');
-  preloadPlaylistData();
-  
-  // Set the active media element to audio by default
-  activeMediaElement = audio;
-  
-  // Hide loading message after a delay
-  setTimeout(() => {
-    message.style.display = "none";
-  }, 2000);
-  
-  // Check if we're on a mobile device
-  checkIfMobile();
-  
-  // Check device orientation if on mobile
-  if (isMobileDevice) {
-    checkOrientation();
-    
-    // Add orientation change listener for mobile devices
-    window.addEventListener('orientationchange', checkOrientation);
-    
-    // Check for device motion permission on iOS
-    if (isIOS) {
-      checkDeviceMotionPermission();
+    // Initialize playlist container positioning
+    if (playlistContainer) {
+      // Ensure the playlist container is properly positioned from the start
+      // This prevents the initial offscreen rendering when first opened
+      console.log('Setting initial playlist container visibility to hidden');
+      playlistContainer.style.visibility = 'hidden';
+      
+      // Set initial positioning
+      playlistContainer.style.position = 'fixed';
+      playlistContainer.style.top = '50%';
+      playlistContainer.style.left = '50%';
+      playlistContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+      
+      // Force a reflow
+      void playlistContainer.offsetHeight;
     }
-  } else {
-    // Show keyboard shortcuts info for desktop users after a short delay
-    setTimeout(showKeyboardShortcutsInfo, 3000);
-  }
-  
-  // Set up periodic muting check to prevent double audio playback
-  const mutingCheckInterval = setInterval(() => {
-    // Only check when media is playing
-    if (!audio.paused || !video.paused) {
-      enforceProperMuting();
+    
+    // Preload playlist data immediately
+    console.log('Pre-loading playlist data...');
+    preloadPlaylistData();
+    
+    // Set the active media element to audio by default
+    activeMediaElement = audio;
+    
+    // Hide loading message after a delay
+    setTimeout(() => {
+      message.style.display = "none";
+    }, 2000);
+    
+    // Check if we're on a mobile device
+    checkIfMobile();
+    
+    // Check device orientation if on mobile
+    if (isMobileDevice) {
+      checkOrientation();
+      
+      // Add orientation change listener for mobile devices
+      window.addEventListener('orientationchange', checkOrientation);
+      
+      // Check for device motion permission on iOS
+      if (isIOS) {
+        checkDeviceMotionPermission();
+      }
+    } else {
+      // Show keyboard shortcuts info for desktop users after a short delay
+      setTimeout(showKeyboardShortcutsInfo, 3000);
     }
-  }, 1000); // Check every second
-  
-  // Set up Chapter 1 sync after a short delay
-  setTimeout(setupChapter1Sync, 1000);
-  
-  // Ensure the playlist is populated (as a fallback)
-  setTimeout(() => {
-    if (!playlist || playlist.length === 0) {
-      console.log('Playlist still empty after timeout, using default playlist');
+    
+    // Set up periodic muting check to prevent double audio playback
+    const mutingCheckInterval = setInterval(() => {
+      // Only check when media is playing
+      if (!audio.paused || !video.paused) {
+        enforceProperMuting();
+      }
+    }, 1000); // Check every second
+    
+    // Set up Chapter 1 sync after a short delay
+    setTimeout(setupMediaSync, 1000);
+    
+    // Ensure the playlist is populated (as a fallback)
+    setTimeout(() => {
+      if (!playlist || playlist.length === 0) {
+        console.log('Playlist still empty after timeout, using default playlist');
+        initializeDefaultPlaylist();
+      } else if (playlist.length > 0 && (!playlistTracks.children.length || playlistTracks.children.length === 1 && playlistTracks.children[0].textContent.includes('Loading'))) {
+        console.log('Playlist not populated yet, forcing population');
+        populatePlaylist();
+      }
+    }, 3000);
+    
+    // Log that initialization is complete
+    console.log('Player initialization complete');
+  } catch (error) {
+    // Log any errors during initialization
+    ErrorLogger.handleError(error, { function: 'initializePlayer' });
+    
+    // Try to recover with default playlist
+    console.log('Attempting to recover from initialization error');
+    setTimeout(() => {
       initializeDefaultPlaylist();
-    } else if (playlist.length > 0 && (!playlistTracks.children.length || playlistTracks.children.length === 1 && playlistTracks.children[0].textContent.includes('Loading'))) {
-      console.log('Playlist not populated yet, forcing population');
       populatePlaylist();
-    }
-  }, 3000);
-  
-  // Log that initialization is complete
-  console.log('Player initialization complete');
+    }, 1000);
+  }
 }
 
 /**
@@ -121,50 +226,46 @@ function preloadPlaylistData() {
     .then(data => {
       console.log('Playlist data preloaded successfully:', data);
       
-      // Verify that the data has the expected structure
-      if (!data || !data.tracks || !Array.isArray(data.tracks) || data.tracks.length === 0) {
+      // Check if we have the new playlist structure with playlists array
+      if (data.playlists && Array.isArray(data.playlists)) {
+        console.log('Using new playlist structure with playlists array');
+        
+        // Flatten all tracks from all playlists into a single array
+        let allTracks = [];
+        
+        data.playlists.forEach(playlistData => {
+          if (playlistData.tracks && Array.isArray(playlistData.tracks)) {
+            const playlistName = playlistData.playlist_name;
+            console.log(`Processing playlist: ${playlistName} with ${playlistData.tracks.length} tracks`);
+            
+            // Add playlist name to each track if not already present
+            const tracksWithPlaylist = playlistData.tracks.map(track => ({
+              ...track,
+              playlist: playlistName // Always use the playlist_name from the playlist object
+            }));
+            
+            allTracks = [...allTracks, ...tracksWithPlaylist];
+          }
+        });
+        
+        // Use the flattened tracks array
+        if (allTracks.length === 0) {
+          throw new Error('No tracks found in playlists');
+        }
+        
+        console.log(`Total tracks from all playlists: ${allTracks.length}`);
+        
+        // Map the tracks to our internal format
+        processPlaylistTracks(allTracks);
+      } 
+      // Fallback to old structure if playlists array is not present
+      else if (data.tracks && Array.isArray(data.tracks)) {
+        console.log('Using old playlist structure with tracks array');
+        processPlaylistTracks(data.tracks);
+      } 
+      else {
         throw new Error('Invalid playlist data format or empty playlist');
       }
-      
-      // Map the tracks from the JSON to our internal format
-      playlist = data.tracks.map(track => ({
-        id: track.chapter,
-        title: track.title,
-        duration: formatDuration(track),
-        active: currentTrackIndex !== -1 && track.id === playlist[currentTrackIndex]?.id,
-        audioSrc: track.audio_url,
-        videoSrc: track.XR_Scene,
-        artworkUrl: track.artwork_url,
-        playlistName: track.playlist,
-        isAR: track.IsAR
-      }));
-      
-      console.log(`Preloaded ${playlist.length} tracks from playlist.json`);
-      
-      // Set playlist title and subtitle if available
-      if (playlist.length > 0) {
-        currentPlaylistTitle = "Chinatown Audio Tour";
-        currentPlaylistSubtitle = playlist[0].playlistName || "Look Up";
-        
-        // Update playlist header
-        const playlistTitle = document.querySelector('.playlist-title');
-        const playlistSubtitle = document.querySelector('.playlist-subtitle');
-        
-        if (playlistTitle) {
-          playlistTitle.textContent = currentPlaylistTitle;
-        }
-        
-        if (playlistSubtitle) {
-          playlistSubtitle.textContent = currentPlaylistSubtitle;
-        }
-      }
-      
-      // Populate the playlist UI in advance
-      populatePlaylist();
-      
-      // Mark playlist as preloaded
-      window.playlistPreloaded = true;
-      console.log('Playlist preloading complete');
     })
     .catch(error => {
       console.error('Error preloading playlist data:', error);
@@ -175,13 +276,80 @@ function preloadPlaylistData() {
     });
 }
 
+/**
+ * Process playlist tracks from JSON data
+ * @param {Array} tracks - Array of track objects from JSON
+ */
+function processPlaylistTracks(tracks) {
+  console.log(`Processing ${tracks.length} tracks from playlist data`);
+  
+  // Log a sample track to verify structure
+  if (tracks.length > 0) {
+    console.log('Sample track structure:', JSON.stringify(tracks[0], null, 2));
+  }
+  
+  // Map the tracks from the JSON to our internal format
+  playlist = tracks.map(track => ({
+    id: track.chapter,
+    title: track.title,
+    duration: formatDuration(track),
+    active: currentTrackIndex !== -1 && track.chapter === playlist[currentTrackIndex]?.id,
+    audioSrc: track.audio_url,
+    videoSrc: track.XR_Scene,
+    artworkUrl: track.artwork_url,
+    playlistName: track.playlist,
+    isAR: track.IsAR
+  }));
+  
+  console.log(`Processed ${playlist.length} tracks from playlist.json`);
+  
+  // Group tracks by playlist name
+  playlistGroups = {};
+  playlist.forEach(track => {
+    const playlistName = track.playlistName || "Unknown Playlist";
+    if (!playlistGroups[playlistName]) {
+      playlistGroups[playlistName] = [];
+    }
+    playlistGroups[playlistName].push(track);
+  });
+  
+  console.log(`Grouped tracks into ${Object.keys(playlistGroups).length} playlists:`, Object.keys(playlistGroups));
+  
+  // Set playlist title and subtitle if available
+  if (playlist.length > 0) {
+    currentPlaylistTitle = "Audio Tours";
+    currentPlaylistSubtitle = "Select a tour to explore";
+    
+    // Update playlist header
+    const playlistTitle = document.querySelector('.playlist-title');
+    const playlistSubtitle = document.querySelector('.playlist-subtitle');
+    
+    if (playlistTitle) {
+      playlistTitle.textContent = currentPlaylistTitle;
+    }
+    
+    if (playlistSubtitle) {
+      playlistSubtitle.textContent = currentPlaylistSubtitle;
+    }
+  }
+  
+  // Populate the playlist UI in advance - default to folders view initially
+  populatePlaylistFolders();
+  
+  // Mark playlist as preloaded
+  window.playlistPreloaded = true;
+  console.log('Playlist preloading complete');
+}
+
 // Global variables for playlist elements
 let playlistContainer;
 let playlistTracks;
 let playlist = [];
+let playlistGroups = {}; // New variable to store grouped playlists
 let currentPlaylistTitle = "";
 let currentPlaylistSubtitle = "";
 let currentTrackIndex = 0;
+let currentPlaylistView = "folders"; // Can be "folders" or a specific playlist name
 let isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 let resetCameraBtn;
@@ -270,19 +438,47 @@ document.addEventListener('DOMContentLoaded', function () {
    * Update the audio player UI with track information
    */
   function updateAudioPlayerUI(title, artist, artworkUrl) {
+    console.log(`updateAudioPlayerUI called with title: "${title}", artist: "${artist}", artworkUrl: "${artworkUrl}"`);
+    
+    // Update text elements
     audioTitle.textContent = title || 'Unknown Track';
     audioArtist.textContent = artist || 'Unknown Artist';
     
-    if (artworkUrl) {
-      albumArtImg.src = artworkUrl;
+    // Update album artwork
+    if (artworkUrl && artworkUrl.trim() !== '') {
+      console.log(`Setting album artwork to: ${artworkUrl}`);
+      
+      // Preload the image before setting it as the source
+      const tempImg = new Image();
+      tempImg.onload = function() {
+        console.log(`Artwork successfully loaded: ${artworkUrl}`);
+        albumArtImg.src = artworkUrl;
+        
+        // Ensure the album art container is visible
+        const albumArtContainer = document.querySelector('.album-art');
+        if (albumArtContainer) {
+          albumArtContainer.style.display = 'block';
+        }
+        
+        // Force a layout update to ensure the album art is properly sized
+        syncAlbumArtworkWidth();
+      };
+      
+      tempImg.onerror = function() {
+        console.error(`Failed to load artwork from URL: ${artworkUrl}`);
+      };
+      
+      // Start loading the image
+      tempImg.src = artworkUrl;
     }
   }
   
   /**
-   * Set up synchronization between audio and video elements for Chapter 1
+   * Set up synchronization between audio and video elements
    * This ensures perfect sync when toggling between audio-only and 360° modes
+   * Works for all tracks, not just Chapter 1
    */
-  function setupChapter1Sync() {
+  function setupMediaSync() {
     console.log('Setting up media synchronization');
     
     // Keep both media elements loaded and ready
@@ -300,15 +496,40 @@ document.addEventListener('DOMContentLoaded', function () {
     
     function startSyncInterval() {
       if (syncInterval) clearInterval(syncInterval);
+      
+      // Use a more frequent sync interval for better accuracy
       syncInterval = setInterval(() => {
         if (!isSeeking) {
-          if (isXRMode) {
-            syncAudioToVideo();
-          } else {
-            syncVideoToAudio();
+          // Check if the active media element is playing
+          if (!activeMediaElement.paused) {
+            if (isXRMode) {
+              // Only sync if video time is within valid audio duration
+              if (video.currentTime < audio.duration - 0.5) {
+                // Check if the time difference is significant
+                const timeDifference = Math.abs(audio.currentTime - video.currentTime);
+                if (timeDifference > 0.3) {
+                  console.log(`Periodic sync: Audio (${audio.currentTime.toFixed(2)}) and Video (${video.currentTime.toFixed(2)}) out of sync by ${timeDifference.toFixed(2)}s`);
+                  syncAudioToVideo();
+                }
+              } else {
+                console.log(`Skipping sync: video time ${video.currentTime.toFixed(2)} exceeds audio duration ${audio.duration.toFixed(2)}`);
+              }
+            } else {
+              // Only sync if audio time is within valid video duration
+              if (audio.currentTime < video.duration - 0.5) {
+                // Check if the time difference is significant
+                const timeDifference = Math.abs(video.currentTime - audio.currentTime);
+                if (timeDifference > 0.3) {
+                  console.log(`Periodic sync: Video (${video.currentTime.toFixed(2)}) and Audio (${audio.currentTime.toFixed(2)}) out of sync by ${timeDifference.toFixed(2)}s`);
+                  syncVideoToAudio();
+                }
+              } else {
+                console.log(`Skipping sync: audio time ${audio.currentTime.toFixed(2)} exceeds video duration ${video.duration.toFixed(2)}`);
+              }
+            }
           }
         }
-      }, 2000);
+      }, 1000); // Check every second instead of every 2 seconds
     }
     
     function stopSyncInterval() {
@@ -397,6 +618,10 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // 4. Sync on ended
     audio.addEventListener('ended', () => {
+      console.log("AUDIO ENDED EVENT FIRED");
+      console.log(`Audio currentTime: ${audio.currentTime}, duration: ${audio.duration}`);
+      console.log(`Current track index: ${currentTrackIndex}, track: ${playlist[currentTrackIndex]?.title}`);
+      
       if (!isXRMode) {
         video.currentTime = 0;
         video.pause();
@@ -409,12 +634,29 @@ document.addEventListener('DOMContentLoaded', function () {
           setTimeout(() => message.style.display = "none", 3000);
         } else {
           // Auto-advance to next track when current track ends
-          loadNextTrack();
+          console.log("Auto-advancing to next track due to audio ended event");
+          
+          // Use a timeout to ensure the UI has time to update
+          setTimeout(() => {
+            loadNextTrack();
+            
+            // Auto-play the next track after a short delay
+            setTimeout(() => {
+              if (activeMediaElement.paused) {
+                console.log('Auto-playing next track after ended event');
+                togglePlayPause();
+              }
+            }, 500);
+          }, 100);
         }
       }
     });
     
     video.addEventListener('ended', () => {
+      console.log("VIDEO ENDED EVENT FIRED");
+      console.log(`Video currentTime: ${video.currentTime}, duration: ${video.duration}`);
+      console.log(`Current track index: ${currentTrackIndex}, track: ${playlist[currentTrackIndex]?.title}`);
+      
       if (isXRMode) {
         audio.currentTime = 0;
         audio.pause();
@@ -427,7 +669,30 @@ document.addEventListener('DOMContentLoaded', function () {
           setTimeout(() => message.style.display = "none", 3000);
         } else {
           // Auto-advance to next track when current track ends
-          loadNextTrack();
+          console.log("Auto-advancing to next track due to video ended event");
+          
+          // Use a timeout to ensure the UI has time to update
+          setTimeout(() => {
+            // First switch to audio mode if the next track doesn't have XR content
+            const nextTrack = playlist[currentTrackIndex + 1];
+            const nextTrackHasXR = nextTrack && nextTrack.videoSrc && nextTrack.videoSrc.trim() !== '';
+            
+            if (!nextTrackHasXR) {
+              console.log("Next track doesn't have XR content, switching to audio mode first");
+              switchToAudioMode();
+            }
+            
+            // Then load the next track
+            loadNextTrack();
+            
+            // Auto-play the next track after a short delay
+            setTimeout(() => {
+              if (activeMediaElement.paused) {
+                console.log('Auto-playing next track after ended event');
+                togglePlayPause();
+              }
+            }, 500);
+          }, 100);
         }
       }
     });
@@ -468,20 +733,22 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
     
-    // Make the "View in XR" button visible for Chapter 1
     if (viewXRBtn) {
       viewXRBtn.style.display = 'flex';
     }
     
-    console.log('Chapter 1 synchronization setup complete');
+    console.log('Media synchronization setup complete');
   }
   
   /**
    * Sync video time to match audio time
    */
   function syncVideoToAudio() {
-    if (Math.abs(video.currentTime - audio.currentTime) > 0.3) {
-      console.log(`Syncing video (${video.currentTime.toFixed(2)}) to audio (${audio.currentTime.toFixed(2)})`);
+    // Only sync if the difference is significant (more than 0.3 seconds)
+    // This prevents unnecessary syncs that could cause stuttering
+    const timeDifference = Math.abs(video.currentTime - audio.currentTime);
+    if (timeDifference > 0.3) {
+      console.log(`Syncing video to audio: Video time ${video.currentTime.toFixed(2)} -> Audio time ${audio.currentTime.toFixed(2)}`);
       video.currentTime = audio.currentTime;
     }
   }
@@ -490,8 +757,11 @@ document.addEventListener('DOMContentLoaded', function () {
    * Sync audio time to match video time
    */
   function syncAudioToVideo() {
-    if (Math.abs(audio.currentTime - video.currentTime) > 0.3) {
-      console.log(`Syncing audio (${audio.currentTime.toFixed(2)}) to video (${video.currentTime.toFixed(2)})`);
+    // Only sync if the difference is significant (more than 0.3 seconds)
+    // This prevents unnecessary syncs that could cause stuttering
+    const timeDifference = Math.abs(audio.currentTime - video.currentTime);
+    if (timeDifference > 0.3) {
+      console.log(`Syncing audio to video: Audio time ${audio.currentTime.toFixed(2)} -> Video time ${video.currentTime.toFixed(2)}`);
       audio.currentTime = video.currentTime;
     }
   }
@@ -808,6 +1078,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Set up counters to track when both files are loaded
     let audioLoaded = false;
     let videoLoaded = false;
+    let audioAttempts = 0;
+    let videoAttempts = 0;
+    const maxAttempts = 3;
     
     // Function to check if both files are loaded
     const checkBothLoaded = () => {
@@ -824,6 +1097,82 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     };
     
+    // Function to retry loading audio
+    const retryAudioLoad = () => {
+      if (audioAttempts < maxAttempts) {
+        audioAttempts++;
+        console.log(`Retrying audio preload (attempt ${audioAttempts}/${maxAttempts})...`);
+        message.textContent = `Retrying audio preload (attempt ${audioAttempts}/${maxAttempts})...`;
+        
+        // Create a new audio element for the retry
+        const tempAudio = new Audio();
+        tempAudio.preload = 'auto';
+        tempAudio.src = audioUrl + '?retry=' + new Date().getTime(); // Add cache-busting parameter
+        
+        tempAudio.addEventListener('canplaythrough', function onAudioReady() {
+          audioLoaded = true;
+          tempAudio.removeEventListener('canplaythrough', onAudioReady);
+          checkBothLoaded();
+        });
+        
+        tempAudio.addEventListener('error', function(e) {
+          console.error(`Audio preload error (attempt ${audioAttempts}/${maxAttempts}):`, e);
+          if (audioAttempts < maxAttempts) {
+            setTimeout(retryAudioLoad, 2000); // Wait 2 seconds before retrying
+          } else {
+            message.textContent = "Error preloading audio. Continuing with limited functionality.";
+            // Continue anyway with video if possible
+            if (videoLoaded) {
+              setTimeout(() => {
+                message.style.display = "none";
+              }, 3000);
+            }
+          }
+        });
+        
+        tempAudio.load();
+      }
+    };
+    
+    // Function to retry loading video
+    const retryVideoLoad = () => {
+      if (videoAttempts < maxAttempts) {
+        videoAttempts++;
+        console.log(`Retrying video preload (attempt ${videoAttempts}/${maxAttempts})...`);
+        message.textContent = `Retrying video preload (attempt ${videoAttempts}/${maxAttempts})...`;
+        
+        // Create a new video element for the retry
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'auto';
+        tempVideo.muted = true;
+        tempVideo.crossOrigin = 'anonymous';
+        tempVideo.src = videoUrl + '?retry=' + new Date().getTime(); // Add cache-busting parameter
+        
+        tempVideo.addEventListener('canplaythrough', function onVideoReady() {
+          videoLoaded = true;
+          tempVideo.removeEventListener('canplaythrough', onVideoReady);
+          checkBothLoaded();
+        });
+        
+        tempVideo.addEventListener('error', function(e) {
+          console.error(`Video preload error (attempt ${videoAttempts}/${maxAttempts}):`, e);
+          if (videoAttempts < maxAttempts) {
+            setTimeout(retryVideoLoad, 2000); // Wait 2 seconds before retrying
+          } else {
+            message.textContent = "Error preloading 360° video. Audio-only mode available.";
+            // Continue anyway with audio if possible
+            if (audioLoaded) {
+              setTimeout(() => {
+                message.style.display = "none";
+              }, 3000);
+            }
+          }
+        });
+        
+        tempVideo.load();
+      }
+    };
+    
     // Preload audio-only version
     const tempAudio = new Audio();
     tempAudio.preload = 'auto';
@@ -837,7 +1186,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     tempAudio.addEventListener('error', function(e) {
       console.error('Audio preload error:', e);
-      message.textContent = "Error preloading audio. Try again later.";
+      retryAudioLoad();
     });
     
     // Preload 360° video version
@@ -855,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     tempVideo.addEventListener('error', function(e) {
       console.error('Video preload error:', e);
-      message.textContent = "Error preloading 360° video. Audio-only mode available.";
+      retryVideoLoad();
     });
     
     // Start loading both files
@@ -919,6 +1268,47 @@ document.addEventListener('DOMContentLoaded', function () {
     // Use the active media element's duration
     const duration = Math.floor(activeMediaElement.duration);
     
+    // Add detailed logging about the duration
+    console.log(`Media duration detected: ${duration} seconds (${formatTime(duration)})`);
+    console.log(`Active media element: ${activeMediaElement === audio ? 'audio' : 'video'}`);
+    console.log(`Current source: ${activeMediaElement.src}`);
+    
+    // Check for potentially invalid duration
+    if (isNaN(duration) || duration <= 0) {
+      console.warn("Invalid duration detected, using fallback duration");
+      
+      // Get the current track
+      const currentTrack = playlist[currentTrackIndex];
+      
+      // Use a fallback duration based on the track
+      let fallbackDuration = 180; // Default 3 minutes
+      
+      if (currentTrack) {
+        // Try to parse the duration from the track data
+        const durationParts = currentTrack.duration.split(':');
+        if (durationParts.length === 2) {
+          const minutes = parseInt(durationParts[0], 10);
+          const seconds = parseInt(durationParts[1], 10);
+          if (!isNaN(minutes) && !isNaN(seconds)) {
+            fallbackDuration = (minutes * 60) + seconds;
+          }
+        }
+      }
+      
+      console.log(`Using fallback duration: ${fallbackDuration} seconds (${formatTime(fallbackDuration)})`);
+      
+      // Set max value of scrubber to fallback duration
+      scrubber.max = fallbackDuration;
+      
+      // Format and display fallback duration
+      durationDisplay.textContent = formatTime(fallbackDuration);
+      
+      // Initialize progress bar to 0
+      updateProgressBar(0);
+      
+      return;
+    }
+    
     // Set max value of scrubber to media duration in seconds
     scrubber.max = duration;
     
@@ -963,59 +1353,83 @@ document.addEventListener('DOMContentLoaded', function () {
       const duration = Math.floor(activeMediaElement.duration) || 1;
       const progressPercentage = (currentTime / duration) * 100;
       
+      // Log every 10 seconds for debugging
+      if (currentTime % 10 === 0 && currentTime > 0) {
+        console.log(`Playback progress: ${currentTime}/${duration} seconds (${Math.round(progressPercentage)}%)`);
+        console.log(`Active media element: ${activeMediaElement === audio ? 'audio' : 'video'}`);
+        console.log(`Current track: ${currentTrackIndex + 1} of ${playlist.length}`);
+      }
+      
+      // Log when approaching the end (last 5 seconds)
+      if (duration - currentTime <= 5 && duration - currentTime > 0) {
+        console.log(`Approaching end of track: ${currentTime}/${duration} seconds (${Math.round(progressPercentage)}%)`);
+      }
+      
       scrubber.value = currentTime;
       currentTimeDisplay.textContent = formatTime(currentTime);
       
       // Update progress bar width
       updateProgressBar(progressPercentage);
       
-      // Check if we're near the end of the track (within last 1 second)
-      // This is a fallback in case the 'ended' event doesn't fire properly
-      if (duration > 0 && (duration - currentTime) <= 1 && !activeMediaElement.paused) {
-        console.log(`Near end of track detected: ${currentTime}/${duration}`);
-        
-        // Only trigger once when we reach this point
-        if (!activeMediaElement.nearEndTriggered) {
-          activeMediaElement.nearEndTriggered = true;
-          console.log("Track nearly complete, preparing to advance");
+      // IMPORTANT: Disable the near-end detection for now as it's causing issues
+      // We'll rely on the 'ended' event instead
+      
+      // Only check for near-end if we're playing a track with a valid duration
+      // AND we're not in the first track (which might be the test track)
+      if (duration > 120 && currentTrackIndex > 0) {
+        // Enhanced check for end of track - more aggressive to catch potential issues
+        // Check if we're near the end of the track (within last 2 seconds or at 98% of duration)
+        const isNearEnd = (duration > 0) && 
+                          ((duration - currentTime <= 2) || 
+                           (progressPercentage >= 98));
+                           
+        if (isNearEnd && !activeMediaElement.paused) {
+          console.log(`Enhanced near-end detection: ${currentTime}/${duration} (${Math.round(progressPercentage)}%)`);
           
-          // If not the last track, prepare to load the next one
-          if (currentTrackIndex < playlist.length - 1) {
-            console.log("Advancing to next track due to near-end detection");
+          // Only trigger once when we reach this point
+          if (!activeMediaElement.nearEndTriggered) {
+            activeMediaElement.nearEndTriggered = true;
+            console.log("Track nearly complete, preparing to advance");
             
-            // Force pause to prevent double-triggering with the ended event
-            activeMediaElement.pause();
-            
-            // Use a timeout to ensure we don't interfere with any 'ended' event
-            setTimeout(() => {
-              // Double-check we're still near the end (in case user scrubbed back)
-              if ((duration - activeMediaElement.currentTime) <= 1.5) {
-                console.log("Still near end, loading next track");
-                
-                try {
-                  const nextIndex = currentTrackIndex + 1;
-                  if (playlist && playlist[nextIndex]) {
-                    console.log(`Loading track ${nextIndex}: ${playlist[nextIndex].title}`);
-                    loadTrack(playlist[nextIndex]);
-                    
-                    // Auto-play the next track
-                    setTimeout(() => {
-                      if (activeMediaElement.paused) {
-                        console.log('Auto-playing next track');
-                        togglePlayPause();
-                      }
-                    }, 500);
+            // If not the last track, prepare to load the next one
+            if (currentTrackIndex < playlist.length - 1) {
+              console.log("Advancing to next track due to enhanced near-end detection");
+              
+              // Force pause to prevent double-triggering with the ended event
+              activeMediaElement.pause();
+              
+              // Use a timeout to ensure we don't interfere with any 'ended' event
+              setTimeout(() => {
+                // Double-check we're still near the end (in case user scrubbed back)
+                if ((duration - activeMediaElement.currentTime) <= 2 || 
+                    ((activeMediaElement.currentTime / duration) * 100) >= 98) {
+                  console.log("Still near end, loading next track");
+                  
+                  try {
+                    const nextIndex = currentTrackIndex + 1;
+                    if (playlist && playlist[nextIndex]) {
+                      console.log(`Loading track ${nextIndex}: ${playlist[nextIndex].title}`);
+                      loadTrack(playlist[nextIndex]);
+                      
+                      // Auto-play the next track
+                      setTimeout(() => {
+                        if (activeMediaElement.paused) {
+                          console.log('Auto-playing next track after ended event');
+                          togglePlayPause();
+                        }
+                      }, 500);
+                    }
+                  } catch (error) {
+                    console.error("Error in near-end advancement:", error);
                   }
-                } catch (error) {
-                  console.error("Error in near-end advancement:", error);
                 }
-              }
-            }, 200);
+              }, 200);
+            }
           }
+        } else {
+          // Reset the flag when not near the end
+          activeMediaElement.nearEndTriggered = false;
         }
-      } else {
-        // Reset the flag when not near the end
-        activeMediaElement.nearEndTriggered = false;
       }
     }
   }
@@ -1540,133 +1954,173 @@ document.addEventListener('DOMContentLoaded', function () {
    * Load playlist data from JSON file
    */
   function loadPlaylistData() {
-    console.log('Attempting to load playlist data from playlist.json');
+    console.log('Loading playlist data from playlist.json');
     
-    // Immediately update UI with loading state
-    updateVideoInfo("Loading playlist...", "Please wait");
-    updateAudioPlayerUI("Loading playlist...", "Please wait", null);
-    
-    // Add a loading indicator to the playlist if it's open
+    // Add a loading indicator to the playlist
     if (playlistTracks) {
       playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title">Loading tracks...</div></div></li>';
     }
     
-    fetch('playlist.json')
-      .then(response => {
-        console.log('Fetch response status:', response.status);
-        if (!response.ok) {
-          throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Playlist data loaded successfully:', data);
-        
-        // Verify that the data has the expected structure
-        if (!data || !data.tracks || !Array.isArray(data.tracks) || data.tracks.length === 0) {
-          throw new Error('Invalid playlist data format or empty playlist');
-        }
-        
-        // Map the tracks from the JSON to our internal format
-        playlist = data.tracks.map(track => ({
-          id: track.chapter,
-          title: track.title,
-          duration: formatDuration(track),
-          active: currentTrackIndex !== -1 && track.id === playlist[currentTrackIndex]?.id, // Mark the current track as active
-          audioSrc: track.audio_url,
-          videoSrc: track.XR_Scene,
-          artworkUrl: track.artwork_url,
-          playlistName: track.playlist,
-          isAR: track.IsAR
-        }));
-        
-        console.log(`Processed ${playlist.length} tracks from playlist.json`);
-        
-        // Set playlist title and subtitle if available
-        if (playlist.length > 0) {
-          currentPlaylistTitle = "Chinatown Audio Tour";
-          currentPlaylistSubtitle = playlist[0].playlistName || "Look Up";
-          
-          // Update playlist header
-          const playlistTitle = document.querySelector('.playlist-title');
-          const playlistSubtitle = document.querySelector('.playlist-subtitle');
-          
-          if (playlistTitle) {
-            playlistTitle.textContent = currentPlaylistTitle;
-            console.log('Updated playlist title to:', currentPlaylistTitle);
+    // Track retry attempts
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    // Function to handle the fetch with retry logic
+    const fetchWithRetry = () => {
+      fetch('playlist.json')
+        .then(response => {
+          console.log('Playlist fetch response status:', response.status);
+          if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
           }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Playlist data loaded successfully:', data);
           
-          if (playlistSubtitle) {
-            playlistSubtitle.textContent = currentPlaylistSubtitle;
-            console.log('Updated playlist subtitle to:', currentPlaylistSubtitle);
+          // Check if we have the new playlist structure with playlists array
+          if (data.playlists && Array.isArray(data.playlists)) {
+            console.log('Using new playlist structure with playlists array');
+            
+            // Flatten all tracks from all playlists into a single array
+            let allTracks = [];
+            
+            data.playlists.forEach(playlistData => {
+              if (playlistData.tracks && Array.isArray(playlistData.tracks)) {
+                const playlistName = playlistData.playlist_name;
+                console.log(`Processing playlist: ${playlistName} with ${playlistData.tracks.length} tracks`);
+                
+                // Add playlist name to each track if not already present
+                const tracksWithPlaylist = playlistData.tracks.map(track => ({
+                  ...track,
+                  playlist: playlistName // Always use the playlist_name from the playlist object
+                }));
+                
+                allTracks = [...allTracks, ...tracksWithPlaylist];
+              }
+            });
+            
+            // Use the flattened tracks array
+            if (allTracks.length === 0) {
+              throw new Error('No tracks found in playlists');
+            }
+            
+            console.log(`Total tracks from all playlists: ${allTracks.length}`);
+            
+            // Map the tracks to our internal format
+            processLoadedTracks(allTracks);
+          } 
+          // Fallback to old structure if playlists array is not present
+          else if (data.tracks && Array.isArray(data.tracks)) {
+            console.log('Using old playlist structure with tracks array');
+            processLoadedTracks(data.tracks);
+          } 
+          else {
+            throw new Error('Invalid playlist data format or empty playlist');
           }
-        }
-        
-        // Populate the playlist UI
-        populatePlaylist();
-        
-        // Mark playlist as preloaded
-        window.playlistPreloaded = true;
-        console.log('Playlist loading complete and marked as preloaded');
-        
-        // Load the first track by default
-        if (playlist.length > 0) {
-          console.log('Loading first track from playlist:', playlist[0].title);
+        })
+        .catch(error => {
+          console.error('Error loading playlist data:', error);
           
-          // Ensure the first track is marked as active
-          playlist[0].active = true;
-          currentTrackIndex = 0;
-          
-          // Force update UI with the first track's information immediately
-          const firstTrack = playlist[0];
-          console.log('First track data:', firstTrack);
-          
-          // Update UI elements directly
-          if (sceneNameElement) {
-            sceneNameElement.textContent = firstTrack.title;
-            console.log('Updated scene name to:', firstTrack.title);
+          // Implement retry logic
+          if (retryCount < maxRetries) {
+            retryCount++;
+            const retryDelay = 1000 * retryCount; // Exponential backoff
+            console.log(`Retrying playlist load (attempt ${retryCount}/${maxRetries}) in ${retryDelay/1000} seconds...`);
+            
+            // Update the loading indicator
+            if (playlistTracks) {
+              playlistTracks.innerHTML = `<li class="playlist-track"><div class="track-info"><div class="track-title">Connection error. Retrying (${retryCount}/${maxRetries})...</div></div></li>`;
+            }
+            
+            // Retry after delay
+            setTimeout(fetchWithRetry, retryDelay);
+          } else {
+            // After max retries, fall back to default playlist
+            console.error('Max retries reached. Using default playlist.');
+            
+            // Update the loading indicator
+            if (playlistTracks) {
+              playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title">Failed to load playlist. Using default tracks.</div></div></li>';
+            }
+            
+            // Fallback to hardcoded playlist
+            initializeDefaultPlaylist();
+            
+            // After a delay, populate the playlist UI with the default tracks
+            setTimeout(() => {
+              populatePlaylist();
+            }, 1500);
           }
-          
-          if (playlistNameElement) {
-            playlistNameElement.textContent = firstTrack.playlistName || "Look Up";
-            console.log('Updated playlist name to:', firstTrack.playlistName || "Look Up");
-          }
-          
-          if (audioTitle) {
-            audioTitle.textContent = firstTrack.title;
-            console.log('Updated audio title to:', firstTrack.title);
-          }
-          
-          if (audioArtist) {
-            audioArtist.textContent = firstTrack.playlistName || "Look Up";
-            console.log('Updated audio artist to:', firstTrack.playlistName || "Look Up");
-          }
-          
-          if (albumArtImg && firstTrack.artworkUrl) {
-            albumArtImg.src = firstTrack.artworkUrl;
-            console.log('Updated album artwork to:', firstTrack.artworkUrl);
-          }
-          
-          // Now load the track properly
-          loadTrack(firstTrack);
-        }
-        
-        // Verify playlist was populated correctly
-        verifyPlaylistPopulated();
-      })
-      .catch(error => {
-        console.error('Error loading playlist data:', error);
-        message.textContent = "Error loading playlist. Using default tracks.";
-        message.style.display = "block";
-        setTimeout(() => message.style.display = "none", 3000);
-        
-        // Fallback to hardcoded playlist if JSON fails to load
-        initializeDefaultPlaylist();
-        
-        // Mark playlist as preloaded (using default data)
-        window.playlistPreloaded = true;
-        console.log('Fallback playlist loaded and marked as preloaded');
-      });
+        });
+    };
+    
+    // Start the first fetch attempt
+    fetchWithRetry();
+  }
+
+  /**
+   * Process loaded playlist tracks
+   * @param {Array} tracks - Array of track objects from JSON
+   */
+  function processLoadedTracks(tracks) {
+    console.log('Processing loaded tracks:', tracks);
+    
+    // Map the tracks from the JSON to our internal format
+    playlist = tracks.map(track => {
+      // Ensure isAR is a boolean value
+      const isAR = track.IsAR === true;
+      
+      return {
+        id: track.chapter,
+        title: track.title,
+        duration: formatDuration(track),
+        active: false, // No track is active initially
+        audioSrc: track.audio_url,
+        videoSrc: track.XR_Scene,
+        artworkUrl: track.artwork_url,
+        playlistName: track.playlist,
+        isAR: isAR
+      };
+    });
+    
+    console.log(`Loaded ${playlist.length} tracks from playlist.json`);
+    
+    // Group tracks by playlist name
+    playlistGroups = {};
+    playlist.forEach(track => {
+      const playlistName = track.playlistName || "Unknown Playlist";
+      if (!playlistGroups[playlistName]) {
+        playlistGroups[playlistName] = [];
+      }
+      playlistGroups[playlistName].push(track);
+    });
+    
+    console.log(`Grouped tracks into ${Object.keys(playlistGroups).length} playlists:`, Object.keys(playlistGroups));
+    
+    // Get the current track's playlist name if we have a current track
+    const currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+    const currentPlaylistName = currentTrack ? currentTrack.playlistName : null;
+    
+    // Populate the playlist UI based on current view or current track
+    if (currentPlaylistName && playlistGroups[currentPlaylistName]) {
+      // If we have a current track, show its playlist
+      currentPlaylistView = currentPlaylistName;
+      populatePlaylistTracks(currentPlaylistName);
+    } else if (currentPlaylistView !== "folders" && playlistGroups[currentPlaylistView]) {
+      // If we're already in a specific playlist view, maintain it
+      populatePlaylistTracks(currentPlaylistView);
+    } else {
+      // Default to folders view
+      currentPlaylistView = "folders";
+      populatePlaylistFolders();
+    }
+    
+    // Mark the playlist as preloaded
+    window.playlistPreloaded = true;
+    
+    // Verify that the playlist was populated correctly
+    verifyPlaylistPopulated();
   }
   
   /**
@@ -1719,17 +2173,32 @@ document.addEventListener('DOMContentLoaded', function () {
    * Initialize default playlist as fallback
    */
   function initializeDefaultPlaylist() {
-    console.log('Using default playlist data');
-    playlist = [
-      { id: 1, title: "Chapter 1: Chinatown Memories", duration: "3:45", active: true, audioSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3", videoSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4", artworkUrl: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif", playlistName: "Look Up", isAR: true },
-      { id: 2, title: "Chapter 2: Look Tin Eli", duration: "4:20", active: false, audioSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-002-COMPRESSED.mp3", videoSrc: "", artworkUrl: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/002+Look_Tin_Eli_12017_Page_17.jpg", playlistName: "Look Up", isAR: false },
-      { id: 3, title: "Chapter 3: Earthquake", duration: "3:10", active: false, audioSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-003-COMPRESSED.mp3", videoSrc: "", artworkUrl: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/003+Chinatown+front_+1906+earthquake.jpg", playlistName: "Look Up", isAR: false },
-      { id: 4, title: "Chapter 4: Spofford Alley", duration: "5:30", active: false, audioSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-004-COMPRESSED.mp3", videoSrc: "", artworkUrl: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/004+Spofford+-+1908_.jpg", playlistName: "Look Up", isAR: false }
-    ];
+    console.log('Initializing default playlist');
     
-    // Set default playlist title and subtitle
-    currentPlaylistTitle = "Chinatown Audio Tour";
-    currentPlaylistSubtitle = "Look Up";
+    // Create a default playlist with a single track
+    playlist = [{
+      id: 1,
+      title: "Chapter 1: Chinatown Memories",
+      duration: "1:18",
+      active: true,
+      audioSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+      videoSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4",
+      artworkUrl: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif",
+      playlistName: "Look Up",
+      isAR: true
+    }];
+    
+    // Set current track index
+    currentTrackIndex = 0;
+    
+    // Group tracks by playlist name
+    playlistGroups = {
+      "Look Up": playlist
+    };
+    
+    // Set playlist title and subtitle
+    currentPlaylistTitle = "Audio Tours";
+    currentPlaylistSubtitle = "Select a tour to explore";
     
     // Update playlist header
     const playlistTitle = document.querySelector('.playlist-title');
@@ -1737,56 +2206,149 @@ document.addEventListener('DOMContentLoaded', function () {
     
     if (playlistTitle) {
       playlistTitle.textContent = currentPlaylistTitle;
-      console.log('Updated playlist title to:', currentPlaylistTitle);
     }
     
     if (playlistSubtitle) {
       playlistSubtitle.textContent = currentPlaylistSubtitle;
-      console.log('Updated playlist subtitle to:', currentPlaylistSubtitle);
     }
     
-    // Populate the playlist UI
-    populatePlaylist();
+    // Set the current playlist view to the current track's playlist
+    currentPlaylistView = "Look Up";
     
-    // Set the current track index
-    currentTrackIndex = 0;
+    // Populate the playlist UI with the current playlist's tracks
+    populatePlaylistTracks("Look Up");
     
-    // Load the first track by default
-    if (playlist.length > 0) {
-      console.log('Loading first track from default playlist:', playlist[0].title);
-      
-      // Load the first track
-      loadTrack(playlist[0]);
-      
-      // Update UI with the first track's information
-      updateVideoInfo(playlist[0].title, playlist[0].playlistName || "Look Up");
-      updateAudioPlayerUI(playlist[0].title, playlist[0].playlistName || "Look Up", playlist[0].artworkUrl);
-    }
+    // Load the first track
+    loadTrack(playlist[0]);
+    
+    // Mark playlist as preloaded
+    window.playlistPreloaded = true;
+    
+    console.log('Default playlist initialized');
   }
 
   /**
-   * Populate the playlist with tracks
+   * Populate the playlist with folders for each playlist
    */
-  function populatePlaylist() {
-    console.log('Populating playlist with tracks:', playlist);
+  function populatePlaylistFolders() {
+    console.log('Populating playlist folders view');
+    console.log('Available playlist groups:', Object.keys(playlistGroups));
     
     // Clear existing tracks
     playlistTracks.innerHTML = '';
     
-    if (!playlist || playlist.length === 0) {
-      console.error('No playlist data available to populate');
+    if (!playlistGroups || Object.keys(playlistGroups).length === 0) {
+      console.error('No playlist groups available to populate');
+      // Add a message to the playlist if it's empty
+      playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title">No playlists available</div></div></li>';
+      return;
+    }
+    
+    // Set the current view to folders
+    currentPlaylistView = "folders";
+    
+    // Update the header
+    const playlistTitle = document.querySelector('.playlist-title');
+    const playlistSubtitle = document.querySelector('.playlist-subtitle');
+    
+    if (playlistTitle) {
+      playlistTitle.textContent = "Audio Tours";
+    }
+    
+    if (playlistSubtitle) {
+      playlistSubtitle.textContent = "Select a tour to explore";
+    }
+    
+    // Add each playlist folder to the UI
+    Object.keys(playlistGroups).forEach(playlistName => {
+      const tracks = playlistGroups[playlistName];
+      console.log(`Creating folder for playlist: ${playlistName} with ${tracks.length} tracks`);
+      
+      const folderElement = document.createElement('li');
+      folderElement.className = 'playlist-folder';
+      folderElement.dataset.playlist = playlistName;
+      
+      folderElement.innerHTML = `
+        <div class="folder-icon"><i class="fas fa-folder"></i></div>
+        <div class="folder-info">
+          <div class="folder-title">${playlistName}</div>
+          <div class="folder-count">${tracks.length} tracks</div>
+        </div>
+        <div class="folder-arrow"><i class="fas fa-chevron-right"></i></div>
+      `;
+      
+      // Add click handler to open this playlist
+      folderElement.addEventListener('click', () => {
+        console.log(`Playlist folder clicked: ${playlistName}`);
+        populatePlaylistTracks(playlistName);
+      });
+      
+      playlistTracks.appendChild(folderElement);
+    });
+    
+    console.log(`Populated playlist UI with ${Object.keys(playlistGroups).length} folders`);
+    
+    // Force a reflow to ensure the playlist is rendered correctly
+    void playlistTracks.offsetHeight;
+  }
+
+  /**
+   * Populate the playlist with tracks from a specific playlist
+   * @param {string} playlistName - The name of the playlist to display
+   */
+  function populatePlaylistTracks(playlistName) {
+    console.log(`Populating tracks for playlist: ${playlistName}`);
+    
+    // Clear existing tracks
+    playlistTracks.innerHTML = '';
+    
+    if (!playlistGroups || !playlistGroups[playlistName] || playlistGroups[playlistName].length === 0) {
+      console.error(`No tracks available for playlist: ${playlistName}`);
       // Add a message to the playlist if it's empty
       playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title">No tracks available</div></div></li>';
       return;
     }
     
+    // Set the current view to this playlist
+    currentPlaylistView = playlistName;
+    
+    // Update the header
+    const playlistTitle = document.querySelector('.playlist-title');
+    const playlistSubtitle = document.querySelector('.playlist-subtitle');
+    
+    if (playlistTitle) {
+      playlistTitle.textContent = playlistName;
+    }
+    
+    if (playlistSubtitle) {
+      playlistSubtitle.textContent = `${playlistGroups[playlistName].length} tracks`;
+    }
+    
+    // Add back button to return to folders view
+    const backButton = document.createElement('li');
+    backButton.className = 'playlist-back';
+    backButton.innerHTML = `
+      <div class="back-icon"><i class="fas fa-arrow-left"></i></div>
+      <div class="back-text">Back to Tours</div>
+    `;
+    
+    // Add click handler to go back to folders view
+    backButton.addEventListener('click', (event) => {
+      event.stopPropagation(); // Prevent event bubbling
+      console.log('Back button clicked, returning to folders view');
+      populatePlaylistFolders();
+    });
+    
+    playlistTracks.appendChild(backButton);
+    
     // Add each track to the playlist
-    playlist.forEach(track => {
+    playlistGroups[playlistName].forEach(track => {
       console.log(`Adding track to UI: ${track.id} - ${track.title}`);
       
       const trackElement = document.createElement('li');
       trackElement.className = `playlist-track${track.active ? ' active' : ''}`;
       trackElement.dataset.id = track.id;
+      trackElement.dataset.playlist = track.playlistName;
       
       trackElement.innerHTML = `
         <div class="track-number">${track.id}</div>
@@ -1819,10 +2381,65 @@ document.addEventListener('DOMContentLoaded', function () {
       playlistTracks.appendChild(trackElement);
     });
     
-    console.log(`Populated playlist UI with ${playlist.length} tracks`);
+    console.log(`Populated playlist UI with ${playlistGroups[playlistName].length} tracks`);
     
     // Force a reflow to ensure the playlist is rendered correctly
     void playlistTracks.offsetHeight;
+  }
+
+  /**
+   * Populate the playlist with tracks
+   * This is now a wrapper function that calls the appropriate populate function
+   * based on the current view
+   */
+  function populatePlaylist() {
+    console.log('populatePlaylist called, redirecting to appropriate function');
+    
+    if (currentPlaylistView === "folders") {
+      populatePlaylistFolders();
+    } else {
+      // If we're in a specific playlist view, populate that playlist's tracks
+      populatePlaylistTracks(currentPlaylistView);
+    }
+  }
+
+  /**
+   * Clean up resources when switching tracks to prevent memory leaks
+   */
+  function cleanupMediaResources() {
+    console.log('Cleaning up media resources');
+    
+    // Remove all event listeners that might be causing memory leaks
+    const cleanupElement = (element) => {
+      // Create a clone of the element without event listeners
+      if (element && element.parentNode) {
+        const clone = element.cloneNode(true);
+        if (element.parentNode) {
+          element.parentNode.replaceChild(clone, element);
+          return clone;
+        }
+      }
+      return element;
+    };
+    
+    // Clean up any temporary media elements that might be in memory
+    const tempElements = document.querySelectorAll('video:not(#video360), audio:not(#audioElement)');
+    tempElements.forEach(element => {
+      console.log('Removing temporary media element:', element);
+      if (element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    });
+    
+    // Force garbage collection of any large objects
+    if (window.gc) {
+      try {
+        window.gc();
+        console.log('Forced garbage collection');
+      } catch (e) {
+        console.log('Garbage collection not available');
+      }
+    }
   }
 
   /**
@@ -1840,22 +2457,35 @@ document.addEventListener('DOMContentLoaded', function () {
       isAR: track.isAR
     }, null, 2));
     
+    // Clean up resources from previous track
+    cleanupMediaResources();
+    
+    // Check if we're switching playlists
+    if (currentTrackIndex !== -1 && playlist[currentTrackIndex]) {
+      const currentPlaylistName = playlist[currentTrackIndex].playlistName;
+      if (currentPlaylistName !== track.playlistName) {
+        console.log(`Playlist boundary detected: Switching from "${currentPlaylistName}" to "${track.playlistName}"`);
+      }
+    }
+    
     // Store the play state before loading the new track
     const wasPlaying = !activeMediaElement.paused;
     console.log(`loadTrack: Previous playback state was ${wasPlaying ? 'playing' : 'paused'}`);
     
-    // Update active state in playlist data
-    playlist.forEach(t => t.active = t.id === track.id);
+    // Update active state in playlist data - only mark this track as active
+    playlist.forEach(t => t.active = (t.id === track.id && t.playlistName === track.playlistName));
     
-    // Update current track index
-    currentTrackIndex = playlist.findIndex(t => t.id === track.id);
-    console.log(`Loading track ${track.id}, index ${currentTrackIndex}: "${track.title}"`);
+    // Update current track index - make sure we find the exact track with matching playlist
+    currentTrackIndex = playlist.findIndex(t => t.id === track.id && t.playlistName === track.playlistName);
+    console.log(`Loading track ${track.id}, index ${currentTrackIndex}: "${track.title}" from playlist "${track.playlistName}"`);
     
     // Update UI to show active track
     const trackElements = playlistTracks.querySelectorAll('.playlist-track');
     trackElements.forEach(el => {
-      if (parseInt(el.dataset.id) === track.id) {
+      // Check both track ID and playlist name to ensure we're marking the correct track
+      if (parseInt(el.dataset.id) === track.id && el.dataset.playlist === track.playlistName) {
         el.classList.add('active');
+        console.log(`Marked track ${track.id} from playlist "${track.playlistName}" as active in UI`);
       } else {
         el.classList.remove('active');
       }
@@ -1869,31 +2499,93 @@ document.addEventListener('DOMContentLoaded', function () {
     audio.pause();
     video.pause();
     
+    // Explicitly set loop to false to prevent looping
+    audio.loop = false;
+    video.loop = false;
+    
     // Check if this track has an XR scene
     const hasXRScene = track.videoSrc && track.videoSrc.trim() !== '';
     
     // Update audio source
     if (track.audioSrc) {
+      console.log(`Setting audio source to: ${track.audioSrc}`);
       audio.src = track.audioSrc;
+      
+      // Add event listener to check the actual duration once loaded
+      const checkAudioDuration = () => {
+        console.log(`Audio file loaded: ${track.audioSrc}`);
+        console.log(`Actual audio duration: ${audio.duration} seconds (${formatTime(Math.floor(audio.duration))})`);
+        
+        // Ensure the duration is properly set for this track
+        if (audio.duration > 0) {
+          // Update the scrubber max value based on the actual duration
+          scrubber.max = Math.floor(audio.duration);
+          durationDisplay.textContent = formatTime(Math.floor(audio.duration));
+        } else {
+          // If duration is not available, use the track's duration from the playlist
+          const durationParts = track.duration.split(':');
+          if (durationParts.length === 2) {
+            const minutes = parseInt(durationParts[0], 10);
+            const seconds = parseInt(durationParts[1], 10);
+            if (!isNaN(minutes) && !isNaN(seconds)) {
+              const fallbackDuration = (minutes * 60) + seconds;
+              scrubber.max = fallbackDuration;
+              durationDisplay.textContent = formatTime(fallbackDuration);
+            }
+          }
+        }
+        
+        audio.removeEventListener('loadedmetadata', checkAudioDuration);
+      };
+      
+      audio.addEventListener('loadedmetadata', checkAudioDuration);
       audio.load();
     }
     
     // Update video source if available
     if (hasXRScene) {
+      console.log(`Track has XR scene: ${track.videoSrc}`);
+      
+      // Set the video source
       const videoSource = video.querySelector('source');
       if (videoSource) {
         videoSource.src = track.videoSrc;
+        console.log(`Set video source to: ${track.videoSrc}`);
+      } else {
+        console.error('No video source element found');
       }
+      
+      // Force the video element to load the new source
       video.load();
       
       // Make the "View in XR" button visible for tracks with XR scenes
       if (viewXRBtn) {
-        viewXRBtn.style.display = track.isAR ? 'flex' : 'none';
+        const shouldShowXRButton = track.isAR === true;
+        console.log(`Setting View in XR button visibility: ${shouldShowXRButton ? 'visible' : 'hidden'}`);
+        viewXRBtn.style.display = shouldShowXRButton ? 'flex' : 'none';
       }
       
       // Set up synchronization for tracks with XR scenes
-      setupChapter1Sync();
+      // But only if we haven't already set it up
+      if (!window.mediaSyncSetup) {
+        console.log('Setting up media synchronization');
+        setupMediaSync();
+        window.mediaSyncSetup = true;
+      }
+      
+      // If we're already in XR mode, ensure the video is properly loaded
+      if (isXRMode) {
+        console.log('Already in XR mode, ensuring video is properly loaded');
+        // Double-check that the video element has the correct source
+        const currentVideoSrc = video.querySelector('source')?.src;
+        if (currentVideoSrc !== track.videoSrc) {
+          console.warn(`Video source mismatch: ${currentVideoSrc} vs ${track.videoSrc}`);
+          video.querySelector('source').src = track.videoSrc;
+          video.load();
+        }
+      }
     } else {
+      console.log('Track does not have an XR scene');
       // Hide the "View in XR" button for tracks without XR scenes
       if (viewXRBtn) {
         viewXRBtn.style.display = 'none';
@@ -1901,6 +2593,7 @@ document.addEventListener('DOMContentLoaded', function () {
       
       // If we're in XR mode but the new track doesn't have an XR scene, switch to audio mode
       if (isXRMode) {
+        console.log('Switching to audio mode because track has no XR scene');
         switchToAudioMode();
       }
     }
@@ -1913,11 +2606,12 @@ document.addEventListener('DOMContentLoaded', function () {
     enforceProperMuting();
     
     // Update scene and playlist info - make sure to use the track's title and playlist name
-    console.log(`Updating UI with track info: "${track.title}" | "${track.playlistName || 'Look Up'}"`);
-    updateVideoInfo(track.title, track.playlistName || "Look Up");
+    console.log(`Updating UI with track info: "${track.title}" | "${track.playlistName}"`);
+    updateVideoInfo(track.title, track.playlistName);
     
     // Update audio player UI with track information
-    updateAudioPlayerUI(track.title, track.playlistName || "Look Up", track.artworkUrl);
+    console.log(`Updating audio player UI with artwork URL: ${track.artworkUrl}`);
+    updateAudioPlayerUI(track.title, track.playlistName, track.artworkUrl);
     
     // Always update the play/pause button to reflect the current state
     // This ensures the UI is consistent even if playback hasn't started yet
@@ -1997,8 +2691,26 @@ document.addEventListener('DOMContentLoaded', function () {
       console.log('Opening playlist');
       
       // Check if playlist is already preloaded
-      if (window.playlistPreloaded && playlist && playlist.length > 0 && playlistTracks.children.length > 0) {
+      if (window.playlistPreloaded && playlist && playlist.length > 0) {
         console.log('Using preloaded playlist data');
+        
+        // Get the current track's playlist name
+        const currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+        const currentPlaylistName = currentTrack ? currentTrack.playlistName : null;
+        
+        console.log(`Current track's playlist: ${currentPlaylistName}`);
+        
+        // If we have a current track, show its playlist's tracks
+        if (currentPlaylistName && playlistGroups[currentPlaylistName]) {
+          console.log(`Showing tracks for current playlist: ${currentPlaylistName}`);
+          currentPlaylistView = currentPlaylistName;
+          populatePlaylistTracks(currentPlaylistName);
+        } else {
+          // If no current track or its playlist doesn't exist, show folders view
+          console.log('No current track or playlist found, showing folders view');
+          currentPlaylistView = "folders";
+          populatePlaylistFolders();
+        }
       } else {
         // If the playlist is empty or not preloaded, try to reload it
         console.log('Playlist not preloaded or empty, attempting to reload playlist data');
@@ -2025,14 +2737,16 @@ document.addEventListener('DOMContentLoaded', function () {
       playlistOverlay.classList.add('open');
       document.body.classList.add('playlist-open');
       
-      // Scroll to the active track if there is one
-      setTimeout(() => {
-        const activeTrack = playlistTracks.querySelector('.playlist-track.active');
-        if (activeTrack) {
-          console.log('Scrolling to active track');
-          activeTrack.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 300); // Wait for the animation to complete
+      // Scroll to the active track if there is one and we're in a specific playlist view
+      if (currentPlaylistView !== "folders") {
+        setTimeout(() => {
+          const activeTrack = playlistTracks.querySelector('.playlist-track.active');
+          if (activeTrack) {
+            console.log('Scrolling to active track');
+            activeTrack.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300); // Wait for the animation to complete
+      }
     }
   }
 
@@ -2057,53 +2771,111 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(data => {
         console.log('Playlist data reloaded successfully:', data);
         
-        if (!data || !data.tracks || !Array.isArray(data.tracks) || data.tracks.length === 0) {
+        // Check if we have the new playlist structure with playlists array
+        if (data.playlists && Array.isArray(data.playlists)) {
+          console.log('Using new playlist structure with playlists array');
+          
+          // Flatten all tracks from all playlists into a single array
+          let allTracks = [];
+          
+          data.playlists.forEach(playlistData => {
+            if (playlistData.tracks && Array.isArray(playlistData.tracks)) {
+              const playlistName = playlistData.playlist_name;
+              console.log(`Processing playlist: ${playlistName} with ${playlistData.tracks.length} tracks`);
+              
+              // Add playlist name to each track if not already present
+              const tracksWithPlaylist = playlistData.tracks.map(track => ({
+                ...track,
+                playlist: playlistName // Always use the playlist_name from the playlist object
+              }));
+              
+              allTracks = [...allTracks, ...tracksWithPlaylist];
+            }
+          });
+          
+          // Use the flattened tracks array
+          if (allTracks.length === 0) {
+            throw new Error('No tracks found in playlists');
+          }
+          
+          console.log(`Total tracks from all playlists: ${allTracks.length}`);
+          
+          // Process the tracks
+          processReloadedTracks(allTracks);
+        } 
+        // Fallback to old structure if playlists array is not present
+        else if (data.tracks && Array.isArray(data.tracks)) {
+          console.log('Using old playlist structure with tracks array');
+          processReloadedTracks(data.tracks);
+        } 
+        else {
           throw new Error('Invalid playlist data format or empty playlist');
         }
-        
-        // Map the tracks from the JSON to our internal format
-        playlist = data.tracks.map(track => ({
-          id: track.chapter,
-          title: track.title,
-          duration: formatDuration(track),
-          active: currentTrackIndex !== -1 && track.id === playlist[currentTrackIndex]?.id, // Mark the current track as active
-          audioSrc: track.audio_url,
-          videoSrc: track.XR_Scene,
-          artworkUrl: track.artwork_url,
-          playlistName: track.playlist,
-          isAR: track.IsAR
-        }));
-        
-        // Populate the playlist UI
-        populatePlaylist();
-        
-        // Mark playlist as preloaded
-        window.playlistPreloaded = true;
-        console.log('Playlist force reload complete and marked as preloaded');
-        
-        // Scroll to the active track
-        setTimeout(() => {
-          const activeTrack = playlistTracks.querySelector('.playlist-track.active');
-          if (activeTrack) {
-            activeTrack.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 100);
       })
       .catch(error => {
         console.error('Error reloading playlist data:', error);
         
         // Show error message in the playlist
         if (playlistTracks) {
-          playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title">Error loading tracks</div></div></li>';
+          playlistTracks.innerHTML = '<li class="playlist-track"><div class="track-info"><div class="track-title">Error loading playlist</div></div></li>';
         }
         
-        // Fallback to default playlist
+        // Fallback to hardcoded playlist if JSON fails to load
         initializeDefaultPlaylist();
-        
-        // Mark playlist as preloaded (using default data)
-        window.playlistPreloaded = true;
-        console.log('Fallback playlist loaded after force reload and marked as preloaded');
       });
+  }
+
+  /**
+   * Process reloaded playlist tracks
+   * @param {Array} tracks - Array of track objects from JSON
+   */
+  function processReloadedTracks(tracks) {
+    // Map the tracks from the JSON to our internal format
+    playlist = tracks.map(track => ({
+      id: track.chapter,
+      title: track.title,
+      duration: formatDuration(track),
+      active: currentTrackIndex !== -1 && track.chapter === playlist[currentTrackIndex]?.id, // Mark the current track as active
+      audioSrc: track.audio_url,
+      videoSrc: track.XR_Scene,
+      artworkUrl: track.artwork_url,
+      playlistName: track.playlist,
+      isAR: track.IsAR
+    }));
+    
+    // Group tracks by playlist name
+    playlistGroups = {};
+    playlist.forEach(track => {
+      const playlistName = track.playlistName || "Unknown Playlist";
+      if (!playlistGroups[playlistName]) {
+        playlistGroups[playlistName] = [];
+      }
+      playlistGroups[playlistName].push(track);
+    });
+    
+    console.log(`Grouped tracks into ${Object.keys(playlistGroups).length} playlists:`, Object.keys(playlistGroups));
+    
+    // Get the current track's playlist name
+    const currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+    const currentPlaylistName = currentTrack ? currentTrack.playlistName : null;
+    
+    // Populate the playlist UI based on current view
+    if (currentPlaylistView === "folders") {
+      populatePlaylistFolders();
+    } else if (playlistGroups[currentPlaylistView]) {
+      populatePlaylistTracks(currentPlaylistView);
+    } else if (currentPlaylistName && playlistGroups[currentPlaylistName]) {
+      // If current view is invalid but we have a current track, show its playlist
+      currentPlaylistView = currentPlaylistName;
+      populatePlaylistTracks(currentPlaylistName);
+    } else {
+      // If all else fails, go back to folders view
+      currentPlaylistView = "folders";
+      populatePlaylistFolders();
+    }
+    
+    // Mark playlist as preloaded
+    window.playlistPreloaded = true;
   }
 
   // Playlist toggle button handler
@@ -2150,122 +2922,175 @@ document.addEventListener('DOMContentLoaded', function () {
    * Check if the device is a mobile device
    */
   function checkIfMobile() {
-    // This is already handled by the isMobileDevice variable initialization
-    // This function is just a placeholder for any additional mobile-specific setup
-    console.log('Checking if mobile device:', isMobileDevice);
+    // First check using user agent (traditional method)
+    const userAgentCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Check for iOS specifically
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-      document.body.classList.add('ios-device');
-      console.log('iOS device detected');
+    // Then check using feature detection (more reliable)
+    const touchCheck = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
+    
+    // Check screen size as well
+    const screenSizeCheck = window.innerWidth <= 768;
+    
+    // Combine all checks
+    isMobileDevice = userAgentCheck || (touchCheck && screenSizeCheck);
+    
+    // Specific iOS detection
+    isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    console.log(`Device detection: Mobile: ${isMobileDevice}, iOS: ${isIOS}`);
+    console.log(`Detection methods: UserAgent: ${userAgentCheck}, Touch: ${touchCheck}, ScreenSize: ${screenSizeCheck}`);
+    
+    // Apply mobile-specific UI adjustments
+    if (isMobileDevice) {
+      document.body.classList.add('mobile-device');
+      
+      // Add specific class for iOS devices
+      if (isIOS) {
+        document.body.classList.add('ios-device');
+      }
+      
+      // Adjust controls for touch interfaces
+      const controlButtons = document.querySelectorAll('.control-button');
+      controlButtons.forEach(button => {
+        button.classList.add('touch-friendly');
+      });
+      
+      // Make scrubber more touch-friendly
+      const scrubberElement = document.getElementById('scrubber');
+      if (scrubberElement) {
+        scrubberElement.classList.add('touch-friendly');
+      }
     }
+    
+    return isMobileDevice;
   }
 
   /**
    * Check the current orientation of the device
    */
   function checkOrientation() {
-    if (window.orientation === 90 || window.orientation === -90 || 
-        (window.innerWidth > window.innerHeight)) {
-      document.body.classList.add('landscape');
-      document.body.classList.remove('portrait');
-      console.log('Landscape orientation detected');
-    } else {
+    // Get the current orientation
+    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+    
+    console.log(`Device orientation: ${isPortrait ? 'Portrait' : 'Landscape'}`);
+    
+    // Add orientation-specific classes to the body
+    if (isPortrait) {
       document.body.classList.add('portrait');
       document.body.classList.remove('landscape');
-      console.log('Portrait orientation detected');
+    } else {
+      document.body.classList.add('landscape');
+      document.body.classList.remove('portrait');
     }
+    
+    // Show a message for XR mode in portrait orientation
+    if (isXRMode && isPortrait) {
+      message.textContent = "Rotate your device to landscape for the best 360° experience.";
+      message.style.display = "block";
+      
+      // Hide the message after a delay
+      setTimeout(() => {
+        if (message.textContent === "Rotate your device to landscape for the best 360° experience.") {
+          message.style.display = "none";
+        }
+      }, 5000);
+    } else {
+      // Hide the message if it's showing the orientation message
+      if (message.textContent === "Rotate your device to landscape for the best 360° experience.") {
+        message.style.display = "none";
+      }
+    }
+    
+    // Adjust UI elements based on orientation
+    ensurePlayerControlsCentered();
+    syncAlbumArtworkWidth();
+    
+    return isPortrait;
   }
 
   /**
    * Load the next track in the playlist
-   * Ensures sequential playback without skipping tracks
    */
   function loadNextTrack() {
-    console.log(`loadNextTrack called - current track index: ${currentTrackIndex}, playlist length: ${playlist ? playlist.length : 0}`);
-    
-    if (!playlist || playlist.length === 0) {
-      console.error('Cannot load next track: playlist is empty');
+    if (currentTrackIndex === -1 || !playlist[currentTrackIndex]) {
+      console.error('Cannot load next track: No current track');
       return;
     }
     
-    // Check if we're at the last track
-    if (currentTrackIndex >= playlist.length - 1) {
-      console.log('Reached the end of the playlist, not advancing');
-      // We're at the last track, don't wrap around
-      message.textContent = "End of audio tour reached";
+    // Get the current track and its playlist name
+    const currentTrack = playlist[currentTrackIndex];
+    const currentPlaylistName = currentTrack.playlistName;
+    
+    // Filter tracks to find those in the same playlist
+    const playlistTracks = playlist.filter(track => track.playlistName === currentPlaylistName);
+    
+    // Find the current track's position within its playlist
+    const currentPlaylistIndex = playlistTracks.findIndex(track => track.id === currentTrack.id);
+    
+    console.log(`Current position in playlist: ${currentPlaylistIndex + 1}/${playlistTracks.length}`);
+    
+    // Check if this is the last track in the playlist
+    if (currentPlaylistIndex === playlistTracks.length - 1) {
+      console.log(`Already at the last track in the "${currentPlaylistName}" playlist.`);
+      message.textContent = `End of playlist: "${currentPlaylistName}"`;
       message.style.display = "block";
-      setTimeout(() => message.style.display = "none", 2000);
-      return;
-    }
-    
-    // Always move to the next sequential track
-    const nextIndex = currentTrackIndex + 1;
-    console.log(`Advancing to next track: ${nextIndex} (${playlist[nextIndex]?.title || 'unknown'})`);
-    
-    // Verify the next track exists before loading
-    if (!playlist[nextIndex]) {
-      console.error(`Error: Track at index ${nextIndex} does not exist in playlist`);
-      return;
-    }
-    
-    // Store the track we're going to load
-    const nextTrack = playlist[nextIndex];
-    console.log(`Next track: ${nextTrack.id} - ${nextTrack.title}`);
-    
-    // Load the next track
-    try {
-      loadTrack(nextTrack);
-      
-      // Show a brief message
-      message.textContent = `Playing: ${nextTrack.title}`;
-      message.style.display = "block";
-      setTimeout(() => message.style.display = "none", 2000);
-      
-      // Force play the next track after a short delay
       setTimeout(() => {
-        if (activeMediaElement.paused) {
-          console.log('Auto-playing next track');
-          togglePlayPause();
-        }
-      }, 500);
-    } catch (error) {
-      console.error('Error loading next track:', error);
-      message.textContent = "Error loading next track";
-      message.style.display = "block";
+        message.style.display = "none";
+      }, 3000);
+      return;
+    }
+    
+    // Load the next track in the same playlist
+    const nextTrackInPlaylist = playlistTracks[currentPlaylistIndex + 1];
+    if (nextTrackInPlaylist) {
+      console.log(`Loading next track in playlist: "${nextTrackInPlaylist.title}"`);
+      loadTrack(nextTrackInPlaylist);
+    } else {
+      console.error('Failed to find next track in playlist');
     }
   }
-  
+
   /**
    * Load the previous track in the playlist
    */
   function loadPreviousTrack() {
-    if (playlist.length === 0) return;
-    
-    // If we're at the first track, just restart it
-    if (currentTrackIndex === 0) {
-      console.log('At first track, restarting from beginning');
-      // Just restart the current track
-      activeMediaElement.currentTime = 0;
-      
-      // Show a brief message
-      message.textContent = "Restarting current track";
-      message.style.display = "block";
-      setTimeout(() => message.style.display = "none", 2000);
+    if (currentTrackIndex === -1 || !playlist[currentTrackIndex]) {
+      console.error('Cannot load previous track: No current track');
       return;
     }
     
-    // Move to the previous track (no wraparound)
-    const prevIndex = currentTrackIndex - 1;
+    // Get the current track and its playlist name
+    const currentTrack = playlist[currentTrackIndex];
+    const currentPlaylistName = currentTrack.playlistName;
     
-    // Load the previous track
-    loadTrack(playlist[prevIndex]);
+    // Filter tracks to find those in the same playlist
+    const playlistTracks = playlist.filter(track => track.playlistName === currentPlaylistName);
     
-    // Show a brief message
-    message.textContent = `Playing: ${playlist[prevIndex].title}`;
-    message.style.display = "block";
-    setTimeout(() => message.style.display = "none", 2000);
+    // Find the current track's position within its playlist
+    const currentPlaylistIndex = playlistTracks.findIndex(track => track.id === currentTrack.id);
+    
+    console.log(`Current position in playlist: ${currentPlaylistIndex + 1}/${playlistTracks.length}`);
+    
+    // Check if this is the first track in the playlist
+    if (currentPlaylistIndex === 0) {
+      console.log(`Already at the first track in the "${currentPlaylistName}" playlist.`);
+      message.textContent = `Beginning of playlist: "${currentPlaylistName}"`;
+      message.style.display = "block";
+      setTimeout(() => {
+        message.style.display = "none";
+      }, 3000);
+      return;
+    }
+    
+    // Load the previous track in the same playlist
+    const prevTrackInPlaylist = playlistTracks[currentPlaylistIndex - 1];
+    if (prevTrackInPlaylist) {
+      console.log(`Loading previous track in playlist: "${prevTrackInPlaylist.title}"`);
+      loadTrack(prevTrackInPlaylist);
+    } else {
+      console.error('Failed to find previous track in playlist');
+    }
   }
 
   // Initialize the player at the end of the DOMContentLoaded event
@@ -2274,40 +3099,82 @@ document.addEventListener('DOMContentLoaded', function () {
   
   // Add robust event listeners for the 'ended' event to ensure auto-advancement always works
   audio.addEventListener('ended', function() {
-    console.log("AUDIO ENDED EVENT TRIGGERED");
-    if (!isXRMode) {
-      console.log(`Audio ended event - currentTrackIndex: ${currentTrackIndex}`);
-      
-      // Check if this is the last track
-      if (currentTrackIndex >= playlist.length - 1) {
-        console.log("Reached the end of the playlist, not advancing");
-        message.textContent = "End of audio tour reached";
-        message.style.display = "block";
-        setTimeout(() => message.style.display = "none", 3000);
-      } else {
-        // Force load the next sequential track
-        console.log(`Forcing advancement to track ${currentTrackIndex + 1}`);
-        loadNextTrack();
-      }
+    console.log('Audio ended event fired');
+    
+    // Get the current track and its playlist
+    const currentTrack = playlist[currentTrackIndex];
+    if (!currentTrack) {
+      console.error('No current track found at index', currentTrackIndex);
+      return;
+    }
+    
+    // Filter tracks to find those in the same playlist
+    const playlistTracks = playlist.filter(track => track.playlistName === currentTrack.playlistName);
+    
+    // Find the current track's position within its playlist
+    const currentPlaylistIndex = playlistTracks.findIndex(track => track.id === currentTrack.id);
+    
+    console.log(`Track ended: "${currentTrack.title}" from playlist "${currentTrack.playlistName}"`);
+    console.log(`Current position in playlist: ${currentPlaylistIndex + 1}/${playlistTracks.length}`);
+    
+    // Check if this is the last track in the playlist
+    if (currentPlaylistIndex === playlistTracks.length - 1) {
+      console.log(`This was the last track in the "${currentTrack.playlistName}" playlist. Not advancing to next track.`);
+      message.textContent = `End of playlist: "${currentTrack.playlistName}"`;
+      message.style.display = "block";
+      setTimeout(() => {
+        message.style.display = "none";
+      }, 3000);
+      return;
+    }
+    
+    // If not the last track, find the next track in the same playlist
+    const nextTrackInPlaylist = playlistTracks[currentPlaylistIndex + 1];
+    if (nextTrackInPlaylist) {
+      console.log(`Loading next track in playlist: "${nextTrackInPlaylist.title}"`);
+      loadTrack(nextTrackInPlaylist);
+    } else {
+      console.error('Failed to find next track in playlist');
     }
   });
   
   video.addEventListener('ended', function() {
-    console.log("VIDEO ENDED EVENT TRIGGERED");
-    if (isXRMode) {
-      console.log(`Video ended event - currentTrackIndex: ${currentTrackIndex}`);
-      
-      // Check if this is the last track
-      if (currentTrackIndex >= playlist.length - 1) {
-        console.log("Reached the end of the playlist, not advancing");
-        message.textContent = "End of audio tour reached";
-        message.style.display = "block";
-        setTimeout(() => message.style.display = "none", 3000);
-      } else {
-        // Force load the next sequential track
-        console.log(`Forcing advancement to track ${currentTrackIndex + 1}`);
-        loadNextTrack();
-      }
+    console.log('Video ended event fired');
+    
+    // Get the current track and its playlist
+    const currentTrack = playlist[currentTrackIndex];
+    if (!currentTrack) {
+      console.error('No current track found at index', currentTrackIndex);
+      return;
+    }
+    
+    // Filter tracks to find those in the same playlist
+    const playlistTracks = playlist.filter(track => track.playlistName === currentTrack.playlistName);
+    
+    // Find the current track's position within its playlist
+    const currentPlaylistIndex = playlistTracks.findIndex(track => track.id === currentTrack.id);
+    
+    console.log(`Track ended: "${currentTrack.title}" from playlist "${currentTrack.playlistName}"`);
+    console.log(`Current position in playlist: ${currentPlaylistIndex + 1}/${playlistTracks.length}`);
+    
+    // Check if this is the last track in the playlist
+    if (currentPlaylistIndex === playlistTracks.length - 1) {
+      console.log(`This was the last track in the "${currentTrack.playlistName}" playlist. Not advancing to next track.`);
+      message.textContent = `End of playlist: "${currentTrack.playlistName}"`;
+      message.style.display = "block";
+      setTimeout(() => {
+        message.style.display = "none";
+      }, 3000);
+      return;
+    }
+    
+    // If not the last track, find the next track in the same playlist
+    const nextTrackInPlaylist = playlistTracks[currentPlaylistIndex + 1];
+    if (nextTrackInPlaylist) {
+      console.log(`Loading next track in playlist: "${nextTrackInPlaylist.title}"`);
+      loadTrack(nextTrackInPlaylist);
+    } else {
+      console.error('Failed to find next track in playlist');
     }
   });
 
@@ -2677,4 +3544,78 @@ function recenterCamera() {
     setTimeout(() => {
         isRecenteringInProgress = false;
     }, 1000);
+}
+
+/**
+ * Monitor network connectivity and handle offline/online events
+ */
+function setupNetworkMonitoring() {
+  console.log('Setting up network connectivity monitoring');
+  
+  // Variable to track if we're currently offline
+  let isOffline = !navigator.onLine;
+  
+  // Function to handle going offline
+  const handleOffline = () => {
+    console.log('Network connection lost');
+    isOffline = true;
+    
+    // Show a message to the user
+    message.textContent = "Network connection lost. Playback may be affected.";
+    message.style.display = "block";
+    
+    // If media is currently playing, we'll let it continue
+    // as it might be buffered enough to keep playing
+    
+    // After a few seconds, hide the message
+    setTimeout(() => {
+      if (message.textContent === "Network connection lost. Playback may be affected.") {
+        message.style.display = "none";
+      }
+    }, 5000);
+  };
+  
+  // Function to handle coming back online
+  const handleOnline = () => {
+    console.log('Network connection restored');
+    
+    // Only show a message if we were previously offline
+    if (isOffline) {
+      message.textContent = "Network connection restored.";
+      message.style.display = "block";
+      
+      // Hide the message after a short delay
+      setTimeout(() => {
+        if (message.textContent === "Network connection restored.") {
+          message.style.display = "none";
+        }
+      }, 3000);
+      
+      // If we were in the middle of loading the playlist, try again
+      if (!playlist || playlist.length === 0) {
+        console.log('Reloading playlist data after connection restored');
+        loadPlaylistData();
+      }
+      
+      isOffline = false;
+    }
+  };
+  
+  // Set up event listeners for online/offline events
+  window.addEventListener('offline', handleOffline);
+  window.addEventListener('online', handleOnline);
+  
+  // Check initial state
+  if (isOffline) {
+    console.log('Starting in offline mode');
+    message.textContent = "No network connection. Some features may be limited.";
+    message.style.display = "block";
+    
+    // Hide the message after a delay
+    setTimeout(() => {
+      if (message.textContent === "No network connection. Some features may be limited.") {
+        message.style.display = "none";
+      }
+    }, 5000);
+  }
 }

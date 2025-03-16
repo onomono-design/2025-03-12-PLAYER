@@ -1,121 +1,419 @@
 {
-  "tracks": [
+  "playlists": [
     {
-      "chapter": 1,
-      "title": "Chapter 1: Chinatown Memories",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif",
-      "playlist": "Look Up",
-      "IsAR": true,
-      "XR_Scene": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4"
+      "playlist_name": "Look Up",
+      "tracks": [
+        {
+          "chapter": 1,
+          "title": "Chapter 1: Chinatown Memories",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif",
+          "playlist": "Look Up",
+          "IsAR": true,
+          "XR_Scene": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4",
+          "duration": "3:45"
+        },
+        {
+          "chapter": 2,
+          "title": "Chapter 2: Look Tin Eli",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-002-COMPRESSED.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/002+Look_Tin_Eli_12017_Page_17.jpg",
+          "playlist": "Look Up",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "4:20"
+        },
+        {
+          "chapter": 3,
+          "title": "Chapter 3: Earthquake",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-003-COMPRESSED.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/003+Chinatown+front_+1906+earthquake.jpg",
+          "playlist": "Look Up",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "3:10"
+        },
+        {
+          "chapter": 4,
+          "title": "Chapter 4: Spofford Alley",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-004-COMPRESSED.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/004+Spofford+-+1908_.jpg",
+          "playlist": "Look Up",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "5:30"
+        },
+        {
+          "chapter": 5,
+          "title": "Chapter 5: Chinese Beautiful",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-005-COMPRESSED.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/005+Chinatown+souvenirs.jpg",
+          "playlist": "Look Up",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:45"
+        },
+        {
+          "chapter": 6,
+          "title": "Erasing Chinatown",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-006-COMPRESSED.mp3",
+          "duration": "2:12:00",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/006+6714001.jpg",
+          "playlist": "Look Up",
+          "IsAR": true,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 7,
+          "title": "Look Up",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-007-COMPRESSED.mp3",
+          "duration": "2:57:00",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/007+ruins+over+Chiantown.jpg",
+          "playlist": "Look Up",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 8,
+          "title": "The Meaning of Asian American",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-008-COMPRESSED.mp3",
+          "duration": "1:49:00",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/008+Low%2BTim.png",
+          "playlist": "Look Up",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 9,
+          "title": "Look Tin Eli's Plan",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-009-COMPRESSED.mp3",
+          "duration": "1:05:00",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/009+Architect+pitcture.jpg",
+          "playlist": "Look Up",
+          "IsAR": true,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 10,
+          "title": "Securing Chinatown",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-010-COMPRESSED.mp3",
+          "duration": "2:48:00",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/010+Dragon+Gates+SF.png",
+          "playlist": "Look Up",
+          "IsAR": true,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 11,
+          "title": "Sing Chong",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-011-COMPRESSED.mp3",
+          "duration": "1:36:00",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/011+Medium+sized+JPEG+(7).jpg",
+          "playlist": "Look Up",
+          "IsAR": true,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 12,
+          "title": "The Spaces Between",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-012-COMPRESSED.mp3",
+          "duration": "4:52:00",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/012+Spaces+Between.png",
+          "playlist": "Look Up",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 13,
+          "title": "Thank You",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-013-COMPRESSED.mp3",
+          "duration": "0:44:00",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/013+Block-CalMigration-logo-Off-White.png",
+          "playlist": "Look Up",
+          "IsAR": false,
+          "XR_Scene": ""
+        }
+      ]
     },
     {
-      "chapter": 2,
-      "title": "Chapter 2: Look Tin Eli",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-002-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/002+Look_Tin_Eli_12017_Page_17.jpg",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
+      "playlist_name": "Ni de Aquí, ni de Allá",
+      "tracks": [
+        {
+          "chapter": 1,
+          "title": "La Placita Raid",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-1.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-1.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": true,
+          "XR_Scene": "",
+          "duration": "1:15"
+        },
+        {
+          "chapter": 2,
+          "title": "LA Beginnings",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-2.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-2.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "3:03"
+        },
+        {
+          "chapter": 3,
+          "title": "Carlos Tres",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-3.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-3.png",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:48"
+        },
+        {
+          "chapter": 4,
+          "title": "Olde California",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-4.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-4.tif",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "3:40"
+        },
+        {
+          "chapter": 5,
+          "title": "Avila Adobe",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-5.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-5.tif",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": true,
+          "XR_Scene": "",
+          "duration": "2:30"
+        },
+        {
+          "chapter": 6,
+          "title": "Dirty Mexicans",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-6.mp3",
+          "duration": "2:50:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-6.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 7,
+          "title": "Opening Night",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-7.mp3",
+          "duration": "1:54:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-7.tif",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": true,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 8,
+          "title": "América Tropical",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-8.mp3",
+          "duration": "3:54:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-8.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 9,
+          "title": "Christine Sterling's Legacy",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-9.mp3",
+          "duration": "4:29:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-9.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 10,
+          "title": "A Gathering Storm",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-10.mp3",
+          "duration": "3:51:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-10.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 11,
+          "title": "The Raid, Reprised",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-11.mp3",
+          "duration": "1:56:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-11.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": true,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 12,
+          "title": "The Aftermath",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-12.mp3",
+          "duration": "1:14:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-12.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 13,
+          "title": "Karla's Story, Part I",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-13.mp3",
+          "duration": "3:57:00",
+          "artwork_url": "",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 14,
+          "title": "\"Voluntary\" Repatriation",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-14.mp3",
+          "duration": "2:22:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-14.png",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 15,
+          "title": "Emilia's Story",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-15.mp3",
+          "duration": "1:44:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-15.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 16,
+          "title": "In Union Station",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-16.mp3",
+          "duration": "0:48:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-16.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": true,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 17,
+          "title": "Departure",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-17.mp3",
+          "duration": "2:09:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-17.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 18,
+          "title": "Karla's Story, Part 2",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-18.mp3",
+          "duration": "2:03:00",
+          "artwork_url": "",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 19,
+          "title": "Lasting Trauma",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-19.mp3",
+          "duration": "2:19:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-19.png",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 20,
+          "title": "Ni de Aquí, Ni de Allá",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-20.mp3",
+          "duration": "2:40:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-20.jpg",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 21,
+          "title": "Remebering a Buried History",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-AUDIO/2025-03-15-DTLA-CH-21.mp3",
+          "duration": "3:54:00",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-21.png",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        },
+        {
+          "chapter": 22,
+          "title": "Thank you",
+          "audio_url": "",
+          "duration": "0:48:00",
+          "artwork_url": "",
+          "playlist": "Ni de Aquí, ni de Allá",
+          "IsAR": false,
+          "XR_Scene": ""
+        }
+      ]
     },
     {
-      "chapter": 3,
-      "title": "Chapter 3: Earthquake",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-003-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/003+Chinatown+front_+1906+earthquake.jpg",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 4,
-      "title": "Chapter 4: Spofford Alley",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-004-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/004+Spofford+-+1908_.jpg",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 5,
-      "title": "Chapter 5: Chinese Beautiful",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-005-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/005+Chinatown+souvenirs.jpg",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 6,
-      "title": "Chapter 6: Erasing Chinatown",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-006-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/006+6714001.jpg",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 7,
-      "title": "Chapter 7: Look Up",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-007-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/007+ruins+over+Chiantown.jpg",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 8,
-      "title": "Chapter 8: The Meaning of Asian American",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-008-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/008+Low%2BTim.png",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 9,
-      "title": "Chapter 9: Look Tin Eli's Plan",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-009-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/009+Architect+pitcture.jpg",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 10,
-      "title": "Chapter 10: Securing Chinatown",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-010-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/010+Dragon+Gates+SF.png",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 11,
-      "title": "Chapter 11: Sing Chong",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-011-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/011+Medium+sized+JPEG+(7).jpg",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 12,
-      "title": "Chapter 12: The Spaces Between",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-012-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/012+Spaces+Between.png",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
-    },
-    {
-      "chapter": 13,
-      "title": "Chapter 13: Thank You",
-      "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-14-CHINATOWN-AUDIO/2025-03-14-CHINATOWN-MP3S/2025-03-14-CHINATOWN-013-COMPRESSED.mp3",
-      "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/013+Block-CalMigration-logo-Off-White.png",
-      "playlist": "Look Up",
-      "IsAR": false,
-      "XR_Scene": ""
+      "playlist_name": "Japantown",
+      "tracks": [
+        {
+          "chapter": 1,
+          "title": "Welcome to Japantown",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif",
+          "playlist": "Japantown",
+          "IsAR": true,
+          "XR_Scene": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4",
+          "duration": "2:30"
+        },
+        {
+          "chapter": 2,
+          "title": "History of Japantown",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/002+Look_Tin_Eli_12017_Page_17.jpg",
+          "playlist": "Japantown",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "3:15"
+        },
+        {
+          "chapter": 3,
+          "title": "Japanese American Experience",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/003+Chinatown+front_+1906+earthquake.jpg",
+          "playlist": "Japantown",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "4:10"
+        },
+        {
+          "chapter": 4,
+          "title": "Cultural Heritage",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/004+Spofford+-+1908_.jpg",
+          "playlist": "Japantown",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:45"
+        },
+        {
+          "chapter": 5,
+          "title": "Modern Japantown",
+          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/005+Chinatown+souvenirs.jpg",
+          "playlist": "Japantown",
+          "IsAR": true,
+          "XR_Scene": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4",
+          "duration": "3:30"
+        }
+      ]
     }
   ]
-} 
+}
