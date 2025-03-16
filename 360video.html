@@ -310,5 +310,186 @@
       }
     });
   </script>
+
+  <!-- Developer Tools (only visible in development) -->
+  <div id="devTools" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999; font-family: monospace; display: none;">
+    <div style="margin-bottom: 5px; font-weight: bold;">Dev Tools</div>
+    <button id="showStartExperience" style="background: #444; color: white; border: 1px solid #666; padding: 5px 10px; cursor: pointer; margin-right: 5px; margin-bottom: 5px;">Show Start Experience</button>
+    <button id="toggleDevTools" style="background: #444; color: white; border: 1px solid #666; padding: 5px 10px; cursor: pointer;">Hide</button>
+  </div>
+
+  <!-- Dev Tools Toggle Button -->
+  <button id="showDevTools" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; z-index: 9998; font-family: monospace;">Dev</button>
+
+  <!-- Start Experience Overlay (for development) -->
+  <div id="startExperienceOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: none; justify-content: center; align-items: center; z-index: 2000; font-family: 'Figtree', sans-serif;">
+    <div style="background-color: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 30px; max-width: 90%; width: 400px; text-align: center; color: #333; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);">
+      <div style="margin-bottom: 20px; font-size: 40px; color: #4285f4;">
+        <i class="fas fa-vr-cardboard"></i>
+      </div>
+      <h2 style="margin-top: 0; font-weight: 600; font-size: 24px; color: #333;">Immersive 360° Experience</h2>
+      
+      <div style="margin: 20px 0; position: relative; height: 100px; display: flex; justify-content: center; align-items: center;">
+        <div style="width: 60px; height: 100px; background: #444; border-radius: 10px; position: relative; transform: perspective(500px) rotateY(15deg); animation: tiltDevice 3s infinite alternate ease-in-out;">
+          <div style="width: 50px; height: 80px; background: #2196F3; border-radius: 5px; position: absolute; top: 10px; left: 5px;"></div>
+        </div>
+      </div>
+      
+      <p style="margin-bottom: 25px; line-height: 1.5; font-size: 16px; color: rgba(0, 0, 0, 0.8);">This experience uses your device's motion sensors to create an immersive 360° environment.</p>
+      
+      <div style="display: flex; justify-content: space-around; width: 100%; margin: 20px 0;">
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 10px;">
+          <i class="fas fa-music" style="font-size: 24px; margin-bottom: 8px; color: #fdbb2d;"></i>
+          <span style="font-size: 14px; text-align: center;">High-quality audio</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 10px;">
+          <i class="fas fa-vr-cardboard" style="font-size: 24px; margin-bottom: 8px; color: #fdbb2d;"></i>
+          <span style="font-size: 14px; text-align: center;">360° visuals</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 10px;">
+          <i class="fas fa-mobile-alt" style="font-size: 24px; margin-bottom: 8px; color: #fdbb2d;"></i>
+          <span style="font-size: 14px; text-align: center;">Motion controls</span>
+        </div>
+      </div>
+      
+      <div style="text-align: left; margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.05); border-radius: 10px;">
+        <p style="margin: 0 0 10px 0; font-weight: 500;">When prompted:</p>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li style="margin-bottom: 5px;">Tap "Allow" to enable motion and orientation access</li>
+          <li>For the best experience, use headphones and move around</li>
+        </ul>
+      </div>
+      
+      <button id="startExperienceButton" style="background-color: #4285f4; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; font-family: 'Figtree', sans-serif; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); width: 100%;">Enable 360° Experience</button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes tiltDevice {
+      0% { transform: perspective(500px) rotateY(-15deg) rotateX(5deg); }
+      100% { transform: perspective(500px) rotateY(15deg) rotateX(-5deg); }
+    }
+  </style>
+
+  <script type="module">
+    import { PlayerState } from './shared-state.js';
+    
+    // Dev tools functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const devTools = document.getElementById('devTools');
+      const showDevTools = document.getElementById('showDevTools');
+      const toggleDevTools = document.getElementById('toggleDevTools');
+      const showStartExperience = document.getElementById('showStartExperience');
+      const startExperienceOverlay = document.getElementById('startExperienceOverlay');
+      const startExperienceButton = document.getElementById('startExperienceButton');
+      const permissionOverlay = document.getElementById('permissionOverlay');
+      
+      // Show dev tools button
+      showDevTools.addEventListener('click', () => {
+        devTools.style.display = 'block';
+        showDevTools.style.display = 'none';
+      });
+      
+      // Hide dev tools button
+      toggleDevTools.addEventListener('click', () => {
+        devTools.style.display = 'none';
+        showDevTools.style.display = 'block';
+      });
+      
+      // Show start experience overlay button
+      showStartExperience.addEventListener('click', () => {
+        startExperienceOverlay.style.display = 'flex';
+      });
+      
+      // Function to handle device orientation permission request
+      function requestDeviceOrientationPermission() {
+        // Visual feedback on button click
+        startExperienceButton.textContent = "Requesting Access...";
+        startExperienceButton.style.opacity = "0.8";
+        
+        // Check if this is a device that requires permission
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+          // iOS 13+ permission request
+          DeviceOrientationEvent.requestPermission()
+            .then(permissionState => {
+              if (permissionState === 'granted') {
+                console.log('Device orientation permission granted');
+                completeStartExperience();
+              } else {
+                console.log('Device orientation permission denied');
+                // Show a message but continue anyway
+                startExperienceButton.textContent = "Continue Anyway";
+                startExperienceButton.style.opacity = "1";
+                
+                // Add a one-time click handler to continue anyway
+                startExperienceButton.addEventListener('click', completeStartExperience, { once: true });
+              }
+            })
+            .catch(error => {
+              console.error('Error requesting device orientation permission:', error);
+              // Show a message but continue anyway
+              startExperienceButton.textContent = "Continue Anyway";
+              startExperienceButton.style.opacity = "1";
+              
+              // Add a one-time click handler to continue anyway
+              startExperienceButton.addEventListener('click', completeStartExperience, { once: true });
+            });
+        } else {
+          // For devices that don't need permission or desktop in dev mode
+          console.log('Device does not require orientation permission or is in dev mode');
+          completeStartExperience();
+        }
+      }
+      
+      // Function to complete the start experience transition
+      function completeStartExperience() {
+        // Fade out the overlay
+        startExperienceOverlay.style.transition = "opacity 0.8s ease-out";
+        startExperienceOverlay.style.opacity = "0";
+        
+        // Hide the overlay after the animation
+        setTimeout(() => {
+          startExperienceOverlay.style.display = 'none';
+          startExperienceOverlay.style.opacity = "1";
+          startExperienceOverlay.style.transition = "";
+          startExperienceButton.textContent = "Enable 360° Experience";
+          startExperienceButton.style.opacity = "1";
+          
+          // If there's a permission overlay, make sure it's hidden
+          if (permissionOverlay) {
+            permissionOverlay.style.display = 'none';
+          }
+          
+          // Set a flag in PlayerState to indicate the experience has started
+          if (PlayerState) {
+            PlayerState.experienceStarted = true;
+          }
+          
+          // Dispatch an event that the experience has started
+          document.dispatchEvent(new CustomEvent('experience-started'));
+        }, 800);
+      }
+      
+      // Start experience button
+      startExperienceButton.addEventListener('click', requestDeviceOrientationPermission);
+      
+      // Hide dev tools by default, even in development mode
+      showDevTools.style.display = 'none';
+      
+      // Make the functions available globally for console access
+      window.showStartExperienceOverlay = () => {
+        startExperienceOverlay.style.display = 'flex';
+        return "Start experience overlay shown. Call this function again to reset.";
+      };
+      
+      window.showDevTools = () => {
+        showDevTools.style.display = 'block';
+        return "Dev tools button is now visible. Click it to show the dev tools panel.";
+      };
+      
+      console.log('Dev functions available: showStartExperienceOverlay(), showDevTools()');
+    });
+  </script>
 </body>
 </html>
