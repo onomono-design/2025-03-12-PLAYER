@@ -86,35 +86,78 @@ export function switchToXRMode() {
       if (typeof DeviceOrientationEvent !== 'undefined' && 
           typeof DeviceOrientationEvent.requestPermission === 'function') {
         console.log('Requesting device orientation permission');
+        
+        // Show loading message
+        if (PlayerState.elements.message) {
+          PlayerState.elements.message.textContent = "Requesting device access...";
+          PlayerState.elements.message.style.display = "block";
+        }
+        
         DeviceOrientationEvent.requestPermission()
           .then(response => {
             if (response === 'granted') {
               console.log('Device orientation permission granted');
-              completeXRModeSwitch(wasPlaying);
+              
+              // Ensure A-Frame scene is ready before completing switch
+              const scene = document.querySelector('a-scene');
+              if (scene) {
+                scene.addEventListener('loaded', () => {
+                  console.log('A-Frame scene loaded, completing XR mode switch');
+                  completeXRModeSwitch(wasPlaying);
+                }, { once: true });
+                
+                // If scene is already loaded, complete switch immediately
+                if (scene.hasLoaded) {
+                  console.log('A-Frame scene already loaded, completing XR mode switch');
+                  completeXRModeSwitch(wasPlaying);
+                }
+              } else {
+                console.log('A-Frame scene not found, proceeding anyway');
+                completeXRModeSwitch(wasPlaying);
+              }
             } else {
               console.log('Device orientation permission denied');
               if (PlayerState.elements.message) {
-                PlayerState.elements.message.textContent = "Please allow device orientation for 360° viewing.";
+                PlayerState.elements.message.textContent = "Limited 360° viewing without device motion.";
                 PlayerState.elements.message.style.display = "block";
-                setTimeout(() => PlayerState.elements.message.style.display = "none", 3000);
+                setTimeout(() => {
+                  if (PlayerState.elements.message) {
+                    PlayerState.elements.message.style.display = "none";
+                  }
+                }, 3000);
               }
+              // Still complete the switch, but user will have limited controls
+              completeXRModeSwitch(wasPlaying);
             }
           })
           .catch(error => {
             console.error('Error requesting device orientation permission:', error);
-            // Proceed anyway as some devices might not need explicit permission
+            // Show error message but proceed anyway
+            if (PlayerState.elements.message) {
+              PlayerState.elements.message.textContent = "Limited 360° viewing available.";
+              PlayerState.elements.message.style.display = "block";
+              setTimeout(() => {
+                if (PlayerState.elements.message) {
+                  PlayerState.elements.message.style.display = "none";
+                }
+              }, 3000);
+            }
             completeXRModeSwitch(wasPlaying);
           });
       } else {
         // Device doesn't require explicit permission
+        console.log('Device does not require orientation permission');
         completeXRModeSwitch(wasPlaying);
       }
     } else {
       // Not a mobile device, proceed normally
+      console.log('Not a mobile device, proceeding normally');
       completeXRModeSwitch(wasPlaying);
     }
   } catch (error) {
     ErrorLogger.handleError(error, { function: 'switchToXRMode' });
+    // Attempt to continue even if there's an error
+    completeXRModeSwitch(false);
   }
 }
 
