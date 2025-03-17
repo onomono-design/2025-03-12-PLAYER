@@ -145,7 +145,7 @@
           "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-15-DTLA-ART/2025-03-15-DTLA-ART-CH-1.jpg",
           "playlist": "Ni de Aquí, ni de Allá",
           "IsAR": true,
-          "XR_Scene": "",
+          "XR_Scene": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-DTLA-WALKINGTOUR/2025-03-16-DTLA-XR/2025-03-16-DTLA-XR-CH1-LOWER.mp4",
           "duration": "1:15"
         },
         {

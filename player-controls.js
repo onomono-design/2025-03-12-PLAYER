@@ -1242,9 +1242,36 @@ document.addEventListener('DOMContentLoaded', function () {
   
   // Error handling for both audio and video
   video.addEventListener('error', (e) => {
-    console.error('Video Error:', e);
-    message.textContent = "Error loading video";
+    const videoError = video.error;
+    console.error('Video Error:', {
+      code: videoError.code,
+      message: videoError.message,
+      currentSrc: video.currentSrc,
+      networkState: video.networkState,
+      readyState: video.readyState
+    });
+    
+    let errorMessage = "Error loading video: ";
+    switch (videoError.code) {
+      case 1:
+        errorMessage += "Video loading aborted";
+        break;
+      case 2:
+        errorMessage += "Network error occurred";
+        break;
+      case 3:
+        errorMessage += "Video decoding failed";
+        break;
+      case 4:
+        errorMessage += "Video format not supported";
+        break;
+      default:
+        errorMessage += "Unknown error";
+    }
+    
+    message.textContent = errorMessage;
     message.style.display = "block";
+    setTimeout(() => message.style.display = "none", 3000);
   });
   
   audio.addEventListener('error', (e) => {
@@ -2075,7 +2102,7 @@ document.addEventListener('DOMContentLoaded', function () {
         id: track.chapter,
         title: track.title,
         duration: formatDuration(track),
-        active: false, // No track is active initially
+        active: currentTrackIndex !== -1 && track.chapter === playlist[currentTrackIndex]?.id,
         audioSrc: track.audio_url,
         videoSrc: track.XR_Scene,
         artworkUrl: track.artwork_url,
@@ -2725,9 +2752,9 @@ document.addEventListener('DOMContentLoaded', function () {
       
       // Set proper positioning
       playlistContainer.style.position = 'fixed';
-      playlistContainer.style.top = '50%';
+      playlistContainer.style.top = isMobileDevice ? '10px' : '20px';
       playlistContainer.style.left = '50%';
-      playlistContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+      playlistContainer.style.transform = 'translateX(-50%) scale(0.95)';
       
       // Force another reflow
       void playlistContainer.offsetHeight;
@@ -3294,6 +3321,25 @@ document.addEventListener('DOMContentLoaded', function () {
       document.body.classList.remove('scrubbing');
     }
   });
+
+  // Add loadstart event listener to track when video starts loading
+  video.addEventListener('loadstart', () => {
+    console.log('Video loadstart event:', {
+      currentSrc: video.currentSrc,
+      networkState: video.networkState,
+      readyState: video.readyState
+    });
+  });
+
+  // Add loadedmetadata event listener to track when video metadata is loaded
+  video.addEventListener('loadedmetadata', () => {
+    console.log('Video loadedmetadata event:', {
+      duration: video.duration,
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+      readyState: video.readyState
+    });
+  });
 }); 
 
 /**
@@ -3313,24 +3359,21 @@ function resetPlaylistPositioning(isVisible = false, isOpen = false) {
   if (isMobileDevice) {
     console.log('Applying mobile-specific playlist positioning');
     playlistContainer.style.position = 'fixed';
-    playlistContainer.style.top = '50%';
+    playlistContainer.style.top = '10px';
     playlistContainer.style.left = '50%';
-    playlistContainer.style.transform = `translate(-50%, -50%) scale(${isOpen ? '1' : '0.95'})`;
+    playlistContainer.style.transform = `translateX(-50%) scale(${isOpen ? '1' : '0.95'})`;
     playlistContainer.style.width = '95%';
-    playlistContainer.style.maxHeight = window.innerWidth > window.innerHeight ? '70vh' : '75vh';
+    playlistContainer.style.maxHeight = 'calc(100vh - 120px)';
     playlistContainer.style.bottom = 'auto';
     playlistContainer.style.right = 'auto';
     playlistContainer.style.margin = '0';
-    
-    // Add important flags to override any conflicting styles
-    playlistContainer.style.setProperty('top', '50%', 'important');
-    playlistContainer.style.setProperty('left', '50%', 'important');
-    playlistContainer.style.setProperty('transform', `translate(-50%, -50%) scale(${isOpen ? '1' : '0.95'})`, 'important');
   } else {
     // Desktop positioning
-    playlistContainer.style.transform = `translate(-50%, -50%) scale(${isOpen ? '1' : '0.95'})`;
-    playlistContainer.style.top = '50%';
+    playlistContainer.style.position = 'fixed';
+    playlistContainer.style.top = '20px';
     playlistContainer.style.left = '50%';
+    playlistContainer.style.transform = `translateX(-50%) scale(${isOpen ? '1' : '0.95'})`;
+    playlistContainer.style.maxHeight = 'calc(100vh - 140px)';
     playlistContainer.style.bottom = 'auto';
     playlistContainer.style.right = 'auto';
     playlistContainer.style.margin = '0';
