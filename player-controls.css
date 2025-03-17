@@ -802,40 +802,35 @@ body.mobile-device #playPauseBtn {
 /* Playlist UI Styles */
 .playlist-container {
   position: fixed;
-  top: 20px; /* Add padding from top of viewport */
+  top: 20px;
   left: 50%;
   transform: translateX(-50%) scale(0.95);
-  width: 100%;
-  max-width: 400px; /* Match the max-width of player-controls */
-  max-height: calc(100vh - 140px); /* Account for top padding and player controls */
-  background-color: rgba(255, 255, 255, 0.95);
-  z-index: 300;
-  border-radius: 1em; /* Match the border-radius of player-controls */
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-  padding: 0;
-  font-family: 'Figtree', sans-serif;
+  width: 90%;
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1em;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease, width 0.3s ease, max-width 0.3s ease;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  font-family: 'Figtree', sans-serif;
   display: flex;
   flex-direction: column;
-  /* Prevent initial rendering at bottom of screen */
-  visibility: hidden;
-  will-change: transform, opacity, width, max-width;
+  max-height: calc(100vh - 140px);
 }
 
 .playlist-container.open {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(-50%) scale(1);
-  visibility: visible;
 }
 
 .playlist-header {
   padding: 20px 20px 15px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  margin-bottom: 0;
+  margin: 0;
   flex-shrink: 0;
 }
 
@@ -878,14 +873,137 @@ body.mobile-device #playPauseBtn {
 
 .playlist-tracks {
   list-style: none;
-  margin: 0;
   padding: 0;
-  max-height: calc(80vh - 80px);
+  margin: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+/* Track styles */
+.playlist-track {
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  color: #333;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.playlist-track:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.playlist-track.active {
+  background-color: rgba(0, 0, 0, 0.05);
+  font-weight: 500;
+  border-left: 3px solid rgba(0, 0, 0, 0.3);
+  padding-left: 17px;
+}
+
+/* Folder styles */
+.playlist-folder {
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  color: #333;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.playlist-folder:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Back button styles */
+.playlist-back {
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.03);
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  color: #333;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.playlist-back:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Track info styles */
+.track-info {
   flex-grow: 1;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.track-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.track-duration {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+  margin-top: 3px;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .playlist-container {
+    width: 95%;
+    top: 10px;
+    max-height: calc(100vh - 120px);
+  }
+
+  .playlist-tracks {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .playlist-tracks::-webkit-scrollbar {
+    display: none;
+  }
+
+  .playlist-folder,
+  .playlist-track,
+  .playlist-back {
+    padding: 12px 15px;
+  }
+
+  .track-title {
+    font-size: 13px;
+  }
+
+  .track-duration {
+    font-size: 11px;
+  }
 }
 
 /* Webkit scrollbar styling */
@@ -915,6 +1033,8 @@ body.mobile-device #playPauseBtn {
   align-items: center;
   color: #333;
   position: relative;
+  min-height: 40px; /* Add consistent minimum height */
+  box-sizing: border-box;
 }
 
 .playlist-track:hover {
@@ -1324,11 +1444,13 @@ body.scrubbing .scrubber::-moz-range-thumb {
   padding: 15px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: background-color 0.2s;
   display: flex;
   align-items: center;
   color: #333;
   position: relative;
+  min-height: 40px; /* Add consistent minimum height */
+  box-sizing: border-box;
 }
 
 .playlist-folder:hover {
@@ -1494,4 +1616,34 @@ body.ios-device .scrubber {
 
 body.ios-device .scrubber-progress {
   top: 3.5px; /* Adjusted for iOS */
+}
+
+/* Remove any transform effects from hover states */
+.playlist-track:hover,
+.playlist-track:active,
+.playlist-folder:hover,
+.playlist-folder:active {
+  transform: none;
+}
+
+/* Ensure no horizontal overflow */
+.playlist-tracks {
+  overflow-x: hidden !important;
+  max-width: 100%;
+}
+
+.track-info,
+.folder-info {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Ensure content stays within bounds */
+.track-title,
+.folder-title,
+.track-duration,
+.folder-count {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 } 

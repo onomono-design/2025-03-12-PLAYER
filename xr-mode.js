@@ -64,15 +64,12 @@ export function switchToXRMode() {
       if (PlayerState.elements.message) {
         PlayerState.elements.message.textContent = "This track does not have a 360° scene.";
         PlayerState.elements.message.style.display = "block";
-        
         setTimeout(() => {
-          if (PlayerState.elements.message && 
-              PlayerState.elements.message.textContent === "This track does not have a 360° scene.") {
+          if (PlayerState.elements.message?.textContent === "This track does not have a 360° scene.") {
             PlayerState.elements.message.style.display = "none";
           }
         }, 3000);
       }
-      
       return;
     }
     
@@ -83,32 +80,75 @@ export function switchToXRMode() {
     if (PlayerState.audio) PlayerState.audio.pause();
     if (PlayerState.video) PlayerState.video.pause();
     
-    // Set XR mode flag
-    PlayerState.setXRMode(true);
-    
-    // Update the active media element
-    PlayerState.setActiveMediaElement(PlayerState.video);
-    
-    // Update UI for XR mode
-    updateUIForCurrentMode(true);
-    
-    // Ensure proper muting
-    enforceProperMuting();
-    
-    // Resume playback if it was playing before
-    if (wasPlaying && PlayerState.activeMediaElement) {
-      PlayerState.activeMediaElement.play().catch(error => {
-        ErrorLogger.handleError(error, { function: 'switchToXRMode' });
-      });
+    // For mobile devices, ensure we have device orientation permission
+    if (PlayerState.isMobileDevice) {
+      // Request device orientation permission if needed
+      if (typeof DeviceOrientationEvent !== 'undefined' && 
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        console.log('Requesting device orientation permission');
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            if (response === 'granted') {
+              console.log('Device orientation permission granted');
+              completeXRModeSwitch(wasPlaying);
+            } else {
+              console.log('Device orientation permission denied');
+              if (PlayerState.elements.message) {
+                PlayerState.elements.message.textContent = "Please allow device orientation for 360° viewing.";
+                PlayerState.elements.message.style.display = "block";
+                setTimeout(() => PlayerState.elements.message.style.display = "none", 3000);
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error requesting device orientation permission:', error);
+            // Proceed anyway as some devices might not need explicit permission
+            completeXRModeSwitch(wasPlaying);
+          });
+      } else {
+        // Device doesn't require explicit permission
+        completeXRModeSwitch(wasPlaying);
+      }
+    } else {
+      // Not a mobile device, proceed normally
+      completeXRModeSwitch(wasPlaying);
     }
-    
-    // Recenter the camera
-    setTimeout(recenterCamera, 500);
-    
-    console.log('Successfully switched to XR mode');
   } catch (error) {
     ErrorLogger.handleError(error, { function: 'switchToXRMode' });
   }
+}
+
+function completeXRModeSwitch(wasPlaying) {
+  // Set XR mode flag
+  PlayerState.setXRMode(true);
+  
+  // Update the active media element
+  PlayerState.setActiveMediaElement(PlayerState.video);
+  
+  // Update UI for XR mode
+  updateUIForCurrentMode(true);
+  
+  // Ensure proper muting
+  enforceProperMuting();
+  
+  // For mobile devices, add a slight delay before playing
+  const playbackDelay = PlayerState.isMobileDevice ? 1000 : 0;
+  
+  if (wasPlaying) {
+    setTimeout(() => {
+      if (PlayerState.activeMediaElement) {
+        PlayerState.activeMediaElement.play().catch(error => {
+          console.error('Error playing video after XR mode switch:', error);
+          ErrorLogger.handleError(error, { function: 'completeXRModeSwitch' });
+        });
+      }
+    }, playbackDelay);
+  }
+  
+  // Recenter the camera with a delay
+  setTimeout(recenterCamera, playbackDelay + 500);
+  
+  console.log('Successfully switched to XR mode');
 }
 
 /**

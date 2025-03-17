@@ -41,24 +41,27 @@
 
   <!-- 360° Video Player (hidden by default) -->
   <div id="videoPlayerContainer" class="video-player-container hidden">
-    <a-scene loading-screen="dotsColor: white; backgroundColor: black" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene loading-screen="dotsColor: white; backgroundColor: black" 
+             vr-mode-ui="enabled: false"
+             device-orientation-permission-ui="enabled: true"
+             embedded
+             loading-screen="dotsColor: white; backgroundColor: black"
+             renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true;">
       <a-assets>
         <video id="video360" 
                crossorigin="anonymous"
-               preload="auto"
-               muted="muted"
+               preload="metadata"
+               muted
                playsinline
-               webkit-playsinline
-               autoplay="false"
-               paused>
+               webkit-playsinline>
           <source id="videoSource" src="https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4" type="video/mp4">
         </video>
       </a-assets>
 
       <!-- Videosphere displaying the 360° video -->
-      <a-videosphere id="videosphere" src="#video360" rotation="0 -90 0" preload="auto"></a-videosphere>
+      <a-videosphere id="videosphere" src="#video360" rotation="0 -90 0"></a-videosphere>
 
-      <a-entity id="cameraEntity" camera look-controls="reverseMouseDrag: true" camera-recenter position="0 1.6 0"></a-entity>
+      <a-entity id="cameraEntity" camera look-controls="reverseMouseDrag: true; touchEnabled: true;" position="0 1.6 0"></a-entity>
     </a-scene>
     
     <!-- Return to audio-only view button (positioned in top left corner) -->
