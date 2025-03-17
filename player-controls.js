@@ -481,55 +481,33 @@ document.addEventListener('DOMContentLoaded', function () {
   function setupMediaSync() {
     console.log('Setting up media synchronization');
     
-    // Keep both media elements loaded and ready
-    // Note: We're not setting sources here anymore as they're set in loadTrack
-    // This function now just sets up the event listeners for synchronization
-    
-    // Set up event listeners for synchronization
-    
-    // 1. Sync on seeking (when user scrubs)
-    audio.addEventListener('seeking', syncVideoToAudio);
-    video.addEventListener('seeking', syncAudioToVideo);
-    
-    // 2. Periodic sync during playback (every 2 seconds)
     let syncInterval = null;
+    const SYNC_THRESHOLD = 0.3; // Maximum allowed difference in seconds
     
     function startSyncInterval() {
-      if (syncInterval) clearInterval(syncInterval);
+      if (syncInterval) {
+        clearInterval(syncInterval);
+      }
       
-      // Use a more frequent sync interval for better accuracy
       syncInterval = setInterval(() => {
-        if (!isSeeking) {
-          // Check if the active media element is playing
-          if (!activeMediaElement.paused) {
+        if (!isSeeking && !video.seeking && !audio.seeking) {
+          const timeDiff = Math.abs(video.currentTime - audio.currentTime);
+          
+          if (timeDiff > SYNC_THRESHOLD) {
+            console.log(`Media out of sync by ${timeDiff.toFixed(2)} seconds`);
+            
             if (isXRMode) {
-              // Only sync if video time is within valid audio duration
-              if (video.currentTime < audio.duration - 0.5) {
-                // Check if the time difference is significant
-                const timeDifference = Math.abs(audio.currentTime - video.currentTime);
-                if (timeDifference > 0.3) {
-                  console.log(`Periodic sync: Audio (${audio.currentTime.toFixed(2)}) and Video (${video.currentTime.toFixed(2)}) out of sync by ${timeDifference.toFixed(2)}s`);
-                  syncAudioToVideo();
-                }
-              } else {
-                console.log(`Skipping sync: video time ${video.currentTime.toFixed(2)} exceeds audio duration ${audio.duration.toFixed(2)}`);
-              }
+              // In XR mode, sync audio to video
+              console.log('Syncing audio to video');
+              audio.currentTime = video.currentTime;
             } else {
-              // Only sync if audio time is within valid video duration
-              if (audio.currentTime < video.duration - 0.5) {
-                // Check if the time difference is significant
-                const timeDifference = Math.abs(video.currentTime - audio.currentTime);
-                if (timeDifference > 0.3) {
-                  console.log(`Periodic sync: Video (${video.currentTime.toFixed(2)}) and Audio (${audio.currentTime.toFixed(2)}) out of sync by ${timeDifference.toFixed(2)}s`);
-                  syncVideoToAudio();
-                }
-              } else {
-                console.log(`Skipping sync: audio time ${audio.currentTime.toFixed(2)} exceeds video duration ${video.duration.toFixed(2)}`);
-              }
+              // In audio mode, sync video to audio
+              console.log('Syncing video to audio');
+              video.currentTime = audio.currentTime;
             }
           }
         }
-      }, 1000); // Check every second instead of every 2 seconds
+      }, 1000); // Check sync every second
     }
     
     function stopSyncInterval() {
@@ -539,231 +517,72 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
     
-    // 3. Sync on play/pause
+    // Start sync on play
     audio.addEventListener('play', () => {
-      if (isXRMode) {
-        // If we're in XR mode but audio starts playing, immediately mute it
-        // This prevents both sources from playing simultaneously
-        console.log("Audio play event while in XR mode - muting audio");
-        audio.muted = true;
-        return;
-      }
-      
-      // Keep video in sync but ensure it's muted
-      video.currentTime = audio.currentTime;
-      
-      // Always ensure video is muted when in audio mode
-      video.muted = true;
-      
-      // Play video silently to keep it in sync, but only if audio is the active element
-      if (activeMediaElement === audio) {
-        console.log("Playing silent video for sync");
-        const videoPlayPromise = video.play();
-        if (videoPlayPromise !== undefined) {
-          videoPlayPromise.catch(error => {
-            console.error('Error playing silent video for sync:', error);
-          });
-        }
-      }
-      
+      console.log('Audio play event - starting sync');
       startSyncInterval();
     });
     
     video.addEventListener('play', () => {
-      if (!isXRMode) {
-        // If we're in audio mode but video starts playing, immediately mute it
-        // This prevents both sources from playing simultaneously
-        console.log("Video play event while in audio mode - muting video");
-        video.muted = true;
-        return;
-      }
-      
-      // Keep audio in sync but ensure it's muted
-      audio.currentTime = video.currentTime;
-      
-      // Always ensure audio is muted when in XR mode
-      audio.muted = true;
-      
-      // Play audio silently to keep it in sync, but only if video is the active element
-      if (activeMediaElement === video) {
-        console.log("Playing silent audio for sync");
-        const audioPlayPromise = audio.play();
-        if (audioPlayPromise !== undefined) {
-          audioPlayPromise.catch(error => {
-            console.error('Error playing silent audio for sync:', error);
-          });
-        }
-      }
-      
+      console.log('Video play event - starting sync');
       startSyncInterval();
     });
     
+    // Stop sync on pause
     audio.addEventListener('pause', () => {
-      if (isXRMode) return;
-      
-      // Pause video when audio pauses
-      console.log("Pausing video because audio paused");
-      video.pause();
+      console.log('Audio pause event - stopping sync');
       stopSyncInterval();
     });
     
     video.addEventListener('pause', () => {
-      if (!isXRMode) return;
-      
-      // Pause audio when video pauses
-      console.log("Pausing audio because video paused");
-      audio.pause();
+      console.log('Video pause event - stopping sync');
       stopSyncInterval();
     });
     
-    // 4. Sync on ended
-    audio.addEventListener('ended', () => {
-      console.log("AUDIO ENDED EVENT FIRED");
-      console.log(`Audio currentTime: ${audio.currentTime}, duration: ${audio.duration}`);
-      console.log(`Current track index: ${currentTrackIndex}, track: ${playlist[currentTrackIndex]?.title}`);
-      
-      if (!isXRMode) {
-        video.currentTime = 0;
-        video.pause();
-        
-        // Check if this is the last track
-        if (currentTrackIndex >= playlist.length - 1) {
-          // This is the last track, show end of tour message
-          message.textContent = "End of audio tour reached";
-          message.style.display = "block";
-          setTimeout(() => message.style.display = "none", 3000);
-        } else {
-          // Auto-advance to next track when current track ends
-          console.log("Auto-advancing to next track due to audio ended event");
-          
-          // Use a timeout to ensure the UI has time to update
-          setTimeout(() => {
-            loadNextTrack();
-            
-            // Auto-play the next track after a short delay
-            setTimeout(() => {
-              if (activeMediaElement.paused) {
-                console.log('Auto-playing next track after ended event');
-                togglePlayPause();
-              }
-            }, 500);
-          }, 100);
-        }
-      }
-    });
-    
-    video.addEventListener('ended', () => {
-      console.log("VIDEO ENDED EVENT FIRED");
-      console.log(`Video currentTime: ${video.currentTime}, duration: ${video.duration}`);
-      console.log(`Current track index: ${currentTrackIndex}, track: ${playlist[currentTrackIndex]?.title}`);
-      
+    // Handle seeking
+    audio.addEventListener('seeking', () => {
+      console.log('Audio seeking event');
       if (isXRMode) {
-        audio.currentTime = 0;
-        audio.pause();
-        
-        // Check if this is the last track
-        if (currentTrackIndex >= playlist.length - 1) {
-          // This is the last track, show end of tour message
-          message.textContent = "End of audio tour reached";
-          message.style.display = "block";
-          setTimeout(() => message.style.display = "none", 3000);
-        } else {
-          // Auto-advance to next track when current track ends
-          console.log("Auto-advancing to next track due to video ended event");
-          
-          // Use a timeout to ensure the UI has time to update
-          setTimeout(() => {
-            // First switch to audio mode if the next track doesn't have XR content
-            const nextTrack = playlist[currentTrackIndex + 1];
-            const nextTrackHasXR = nextTrack && nextTrack.videoSrc && nextTrack.videoSrc.trim() !== '';
-            
-            if (!nextTrackHasXR) {
-              console.log("Next track doesn't have XR content, switching to audio mode first");
-              switchToAudioMode();
-            }
-            
-            // Then load the next track
-            loadNextTrack();
-            
-            // Auto-play the next track after a short delay
-            setTimeout(() => {
-              if (activeMediaElement.paused) {
-                console.log('Auto-playing next track after ended event');
-                togglePlayPause();
-              }
-            }, 500);
-          }, 100);
-        }
+        video.currentTime = audio.currentTime;
       }
     });
     
-    // Add volume change listeners to ensure proper muting
-    audio.addEventListener('volumechange', () => {
-      if (isXRMode && !audio.muted) {
-        console.log("Enforcing audio mute in XR mode");
-        audio.muted = true;
+    video.addEventListener('seeking', () => {
+      console.log('Video seeking event');
+      if (!isXRMode) {
+        audio.currentTime = video.currentTime;
       }
     });
     
-    video.addEventListener('volumechange', () => {
-      if (!isXRMode && !video.muted) {
-        console.log("Enforcing video mute in audio mode");
-        video.muted = true;
-      }
-    });
-    
-    // Add additional listeners for timeupdate to catch any muting issues during playback
+    // Handle timeupdate
     audio.addEventListener('timeupdate', () => {
-      // Check every few seconds during playback
-      if (Math.floor(audio.currentTime) % 5 === 0) {
-        if (isXRMode && !audio.muted) {
-          console.log("Caught unmuted audio during timeupdate in XR mode");
-          audio.muted = true;
-        }
+      if (!isSeeking && isXRMode && Math.abs(video.currentTime - audio.currentTime) > SYNC_THRESHOLD) {
+        video.currentTime = audio.currentTime;
       }
     });
     
     video.addEventListener('timeupdate', () => {
-      // Check every few seconds during playback
-      if (Math.floor(video.currentTime) % 5 === 0) {
-        if (!isXRMode && !video.muted) {
-          console.log("Caught unmuted video during timeupdate in audio mode");
-          video.muted = true;
-        }
+      if (!isSeeking && !isXRMode && Math.abs(video.currentTime - audio.currentTime) > SYNC_THRESHOLD) {
+        audio.currentTime = video.currentTime;
       }
     });
     
-    if (viewXRBtn) {
-      viewXRBtn.style.display = 'flex';
-    }
+    // Handle ended events
+    audio.addEventListener('ended', () => {
+      console.log('Audio ended event');
+      if (!isXRMode) {
+        video.currentTime = 0;
+        video.pause();
+      }
+    });
     
-    console.log('Media synchronization setup complete');
-  }
-  
-  /**
-   * Sync video time to match audio time
-   */
-  function syncVideoToAudio() {
-    // Only sync if the difference is significant (more than 0.3 seconds)
-    // This prevents unnecessary syncs that could cause stuttering
-    const timeDifference = Math.abs(video.currentTime - audio.currentTime);
-    if (timeDifference > 0.3) {
-      console.log(`Syncing video to audio: Video time ${video.currentTime.toFixed(2)} -> Audio time ${audio.currentTime.toFixed(2)}`);
-      video.currentTime = audio.currentTime;
-    }
-  }
-  
-  /**
-   * Sync audio time to match video time
-   */
-  function syncAudioToVideo() {
-    // Only sync if the difference is significant (more than 0.3 seconds)
-    // This prevents unnecessary syncs that could cause stuttering
-    const timeDifference = Math.abs(audio.currentTime - video.currentTime);
-    if (timeDifference > 0.3) {
-      console.log(`Syncing audio to video: Audio time ${audio.currentTime.toFixed(2)} -> Video time ${video.currentTime.toFixed(2)}`);
-      audio.currentTime = video.currentTime;
-    }
+    video.addEventListener('ended', () => {
+      console.log('Video ended event');
+      if (isXRMode) {
+        audio.currentTime = 0;
+        audio.pause();
+      }
+    });
   }
   
   /**
@@ -2398,6 +2217,12 @@ document.addEventListener('DOMContentLoaded', function () {
           activeMediaElement.pause();
         }
         
+        // Always switch to audio mode first when selecting a new track
+        if (isXRMode) {
+          console.log('Switching to audio mode before loading new track');
+          switchToAudioMode();
+        }
+        
         // Load the track - the loadTrack function will handle auto-play if needed
         loadTrack(track);
         
@@ -2474,66 +2299,12 @@ document.addEventListener('DOMContentLoaded', function () {
    * @param {Object} track - The track to load
    */
   function loadTrack(track) {
-    // Debug log to help diagnose issues
-    console.log('loadTrack called with:', JSON.stringify({
-      id: track.id,
-      title: track.title,
-      playlistName: track.playlistName,
-      audioSrc: track.audioSrc,
-      videoSrc: track.videoSrc,
-      isAR: track.isAR
-    }, null, 2));
+    console.log('Loading track:', track);
     
-    // Clean up resources from previous track
-    cleanupMediaResources();
+    // Store if we were playing before loading the new track
+    const wasPlaying = activeMediaElement && !activeMediaElement.paused;
     
-    // Check if we're switching playlists
-    if (currentTrackIndex !== -1 && playlist[currentTrackIndex]) {
-      const currentPlaylistName = playlist[currentTrackIndex].playlistName;
-      if (currentPlaylistName !== track.playlistName) {
-        console.log(`Playlist boundary detected: Switching from "${currentPlaylistName}" to "${track.playlistName}"`);
-      }
-    }
-    
-    // Store the play state before loading the new track
-    const wasPlaying = !activeMediaElement.paused;
-    console.log(`loadTrack: Previous playback state was ${wasPlaying ? 'playing' : 'paused'}`);
-    
-    // Update active state in playlist data - only mark this track as active
-    playlist.forEach(t => t.active = (t.id === track.id && t.playlistName === track.playlistName));
-    
-    // Update current track index - make sure we find the exact track with matching playlist
-    currentTrackIndex = playlist.findIndex(t => t.id === track.id && t.playlistName === track.playlistName);
-    console.log(`Loading track ${track.id}, index ${currentTrackIndex}: "${track.title}" from playlist "${track.playlistName}"`);
-    
-    // Update UI to show active track
-    const trackElements = playlistTracks.querySelectorAll('.playlist-track');
-    trackElements.forEach(el => {
-      // Check both track ID and playlist name to ensure we're marking the correct track
-      if (parseInt(el.dataset.id) === track.id && el.dataset.playlist === track.playlistName) {
-        el.classList.add('active');
-        console.log(`Marked track ${track.id} from playlist "${track.playlistName}" as active in UI`);
-      } else {
-        el.classList.remove('active');
-      }
-    });
-    
-    // Show loading message
-    message.textContent = `Loading "${track.title}"...`;
-    message.style.display = "block";
-    
-    // Pause both media elements to prevent any unexpected playback
-    audio.pause();
-    video.pause();
-    
-    // Explicitly set loop to false to prevent looping
-    audio.loop = false;
-    video.loop = false;
-    
-    // Check if this track has an XR scene
-    const hasXRScene = track.videoSrc && track.videoSrc.trim() !== '';
-    
-    // Update audio source
+    // First, update audio source
     if (track.audioSrc) {
       console.log(`Setting audio source to: ${track.audioSrc}`);
       audio.src = track.audioSrc;
@@ -2541,25 +2312,12 @@ document.addEventListener('DOMContentLoaded', function () {
       // Add event listener to check the actual duration once loaded
       const checkAudioDuration = () => {
         console.log(`Audio file loaded: ${track.audioSrc}`);
-        console.log(`Actual audio duration: ${audio.duration} seconds (${formatTime(Math.floor(audio.duration))})`);
+        console.log(`Actual audio duration: ${audio.duration} seconds`);
         
-        // Ensure the duration is properly set for this track
+        // Update duration display
         if (audio.duration > 0) {
-          // Update the scrubber max value based on the actual duration
           scrubber.max = Math.floor(audio.duration);
           durationDisplay.textContent = formatTime(Math.floor(audio.duration));
-        } else {
-          // If duration is not available, use the track's duration from the playlist
-          const durationParts = track.duration.split(':');
-          if (durationParts.length === 2) {
-            const minutes = parseInt(durationParts[0], 10);
-            const seconds = parseInt(durationParts[1], 10);
-            if (!isNaN(minutes) && !isNaN(seconds)) {
-              const fallbackDuration = (minutes * 60) + seconds;
-              scrubber.max = fallbackDuration;
-              durationDisplay.textContent = formatTime(fallbackDuration);
-            }
-          }
         }
         
         audio.removeEventListener('loadedmetadata', checkAudioDuration);
@@ -2569,47 +2327,44 @@ document.addEventListener('DOMContentLoaded', function () {
       audio.load();
     }
     
-    // Update video source if available
+    // Check if this track has an XR scene
+    const hasXRScene = track.videoSrc && track.videoSrc.trim() !== '';
+    
     if (hasXRScene) {
-      console.log(`Track has XR scene: ${track.videoSrc}`);
+      console.log('Track has an XR scene:', track.videoSrc);
       
-      // Set the video source
-      const videoSource = video.querySelector('source');
-      if (videoSource) {
-        videoSource.src = track.videoSrc;
-        console.log(`Set video source to: ${track.videoSrc}`);
-      } else {
-        console.error('No video source element found');
-      }
-      
-      // Force the video element to load the new source
-      video.load();
-      
-      // Make the "View in XR" button visible for tracks with XR scenes
+      // Show the "View in XR" button since this track has an XR scene
       if (viewXRBtn) {
-        const shouldShowXRButton = track.isAR === true;
-        console.log(`Setting View in XR button visibility: ${shouldShowXRButton ? 'visible' : 'hidden'}`);
-        viewXRBtn.style.display = shouldShowXRButton ? 'flex' : 'none';
+        viewXRBtn.style.display = 'block';
       }
       
-      // Set up synchronization for tracks with XR scenes
-      // But only if we haven't already set it up
-      if (!window.mediaSyncSetup) {
-        console.log('Setting up media synchronization');
-        setupMediaSync();
-        window.mediaSyncSetup = true;
-      }
-      
-      // If we're already in XR mode, ensure the video is properly loaded
-      if (isXRMode) {
-        console.log('Already in XR mode, ensuring video is properly loaded');
-        // Double-check that the video element has the correct source
-        const currentVideoSrc = video.querySelector('source')?.src;
-        if (currentVideoSrc !== track.videoSrc) {
-          console.warn(`Video source mismatch: ${currentVideoSrc} vs ${track.videoSrc}`);
-          video.querySelector('source').src = track.videoSrc;
-          video.load();
+      // Load video source
+      if (video.src !== track.videoSrc) {
+        console.log('Loading new video source');
+        video.src = track.videoSrc;
+        
+        // On mobile, we need to handle loading differently
+        if (isMobileDevice) {
+          // Preload metadata only on mobile to reduce memory usage
+          video.preload = 'metadata';
+          
+          // Add a one-time loadedmetadata event listener
+          const handleVideoMetadata = () => {
+            console.log('Video metadata loaded on mobile');
+            video.removeEventListener('loadedmetadata', handleVideoMetadata);
+            
+            // Now preload the actual video data
+            video.preload = 'auto';
+            video.load();
+          };
+          
+          video.addEventListener('loadedmetadata', handleVideoMetadata);
+        } else {
+          // On desktop, we can preload the video immediately
+          video.preload = 'auto';
         }
+        
+        video.load();
       }
     } else {
       console.log('Track does not have an XR scene');
@@ -2623,16 +2378,29 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('Switching to audio mode because track has no XR scene');
         switchToAudioMode();
       }
+      
+      // Clear video source
+      video.removeAttribute('src');
+      video.load();
     }
     
     // Reset playback position
     audio.currentTime = 0;
     video.currentTime = 0;
     
-    // Ensure proper muting based on current mode
+    // Always start in audio mode for consistency
+    if (isXRMode) {
+      console.log('Switching to audio mode for consistent starting state');
+      switchToAudioMode();
+    }
+    
+    // Set the active media element based on current mode
+    activeMediaElement = isXRMode ? video : audio;
+    
+    // Ensure proper muting
     enforceProperMuting();
     
-    // Update scene and playlist info - make sure to use the track's title and playlist name
+    // Update scene and playlist info
     console.log(`Updating UI with track info: "${track.title}" | "${track.playlistName}"`);
     updateVideoInfo(track.title, track.playlistName);
     
@@ -2640,59 +2408,13 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log(`Updating audio player UI with artwork URL: ${track.artworkUrl}`);
     updateAudioPlayerUI(track.title, track.playlistName, track.artworkUrl);
     
-    // Always update the play/pause button to reflect the current state
-    // This ensures the UI is consistent even if playback hasn't started yet
+    // Resume playback if it was playing before
     if (wasPlaying) {
-      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    } else {
-      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-    }
-    
-    // Function to play media when it's ready
-    const playWhenReady = () => {
-      // Double-check mute states before playing
-      enforceProperMuting();
-      
-      console.log('Media ready to play, starting playback');
-      activeMediaElement.play()
-        .then(() => {
-          message.style.display = "none";
-          updatePlayPauseButton();
-          // Double-check muting after playback starts
-          enforceProperMuting();
-        })
-        .catch(error => {
-          console.error('Error playing media:', error);
-          message.textContent = "Error playing media. Please try again.";
-          message.style.display = "block";
-          // Reset play button if playback fails
-          playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-        });
-      
-      // Remove event listeners
-      video.removeEventListener('canplay', playWhenReady);
-      audio.removeEventListener('canplay', playWhenReady);
-    };
-    
-    // Set up event listeners for media readiness
-    if (wasPlaying) {
-      // If we were playing before, auto-play the new track when ready
-      console.log('Setting up auto-play for new track');
-      video.addEventListener('canplay', playWhenReady);
-      audio.addEventListener('canplay', playWhenReady);
-      
-      // Also set a timeout as a fallback in case the canplay event doesn't fire
-      setTimeout(() => {
-        if (activeMediaElement.paused && wasPlaying) {
-          console.log('Fallback: Starting playback after timeout');
-          togglePlayPause();
-        }
-      }, 1500);
-    } else {
-      // Just hide the message after a delay if not playing
-      setTimeout(() => {
-        message.style.display = "none";
-      }, 2000);
+      console.log('Resuming playback');
+      activeMediaElement.play().catch(error => {
+        console.error('Error resuming playback:', error);
+        ErrorLogger.handleError(error, { function: 'loadTrack' });
+      });
     }
   }
 
