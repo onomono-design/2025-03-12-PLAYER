@@ -80,68 +80,41 @@ export function switchToXRMode() {
     if (PlayerState.audio) PlayerState.audio.pause();
     if (PlayerState.video) PlayerState.video.pause();
     
-    // Additional checks for mobile devices
+    // For mobile devices, ensure we have device orientation permission
     if (PlayerState.isMobileDevice) {
-      console.log('Switching to XR mode on mobile device');
-      
-      // Ensure video is ready
-      if (!PlayerState.video.readyState >= 1) {
-        console.log('Video not ready yet, waiting for metadata...');
-        return new Promise((resolve, reject) => {
-          const handleMetadata = () => {
-            console.log('Video metadata loaded, proceeding with XR mode switch');
-            PlayerState.video.removeEventListener('loadedmetadata', handleMetadata);
-            switchToXRMode().then(resolve).catch(reject);
-          };
-          PlayerState.video.addEventListener('loadedmetadata', handleMetadata);
-        });
-      }
-      
-      // Check if video is actually playable
-      if (PlayerState.video.error) {
-        console.error('Video error detected:', PlayerState.video.error);
-        if (PlayerState.elements.message) {
-          PlayerState.elements.message.textContent = "Error loading 360° scene. Please try again.";
-          PlayerState.elements.message.style.display = "block";
-          setTimeout(() => {
-            if (PlayerState.elements.message?.textContent === "Error loading 360° scene. Please try again.") {
-              PlayerState.elements.message.style.display = "none";
+      // Request device orientation permission if needed
+      if (typeof DeviceOrientationEvent !== 'undefined' && 
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        console.log('Requesting device orientation permission');
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            if (response === 'granted') {
+              console.log('Device orientation permission granted');
+              completeXRModeSwitch(wasPlaying);
+            } else {
+              console.log('Device orientation permission denied');
+              if (PlayerState.elements.message) {
+                PlayerState.elements.message.textContent = "Please allow device orientation for 360° viewing.";
+                PlayerState.elements.message.style.display = "block";
+                setTimeout(() => PlayerState.elements.message.style.display = "none", 3000);
+              }
             }
-          }, 3000);
-        }
-        return;
+          })
+          .catch(error => {
+            console.error('Error requesting device orientation permission:', error);
+            // Proceed anyway as some devices might not need explicit permission
+            completeXRModeSwitch(wasPlaying);
+          });
+      } else {
+        // Device doesn't require explicit permission
+        completeXRModeSwitch(wasPlaying);
       }
+    } else {
+      // Not a mobile device, proceed normally
+      completeXRModeSwitch(wasPlaying);
     }
-    
-    // Set XR mode flag
-    PlayerState.setXRMode(true);
-    
-    // Update the active media element
-    PlayerState.setActiveMediaElement(PlayerState.video);
-    
-    // Update UI for XR mode
-    updateUIForCurrentMode(true);
-    
-    // Ensure proper muting
-    enforceProperMuting();
-    
-    // Resume playback if it was playing before
-    if (wasPlaying && PlayerState.activeMediaElement) {
-      console.log('Resuming playback in XR mode');
-      PlayerState.activeMediaElement.play().catch(error => {
-        console.error('Error resuming playback in XR mode:', error);
-        ErrorLogger.handleError(error, { function: 'switchToXRMode' });
-      });
-    }
-    
-    console.log('Successfully switched to XR mode');
   } catch (error) {
-    console.error('Error switching to XR mode:', error);
     ErrorLogger.handleError(error, { function: 'switchToXRMode' });
-    
-    // Try to recover by switching back to audio mode
-    console.log('Attempting to recover by switching back to audio mode');
-    switchToAudioMode();
   }
 }
 
