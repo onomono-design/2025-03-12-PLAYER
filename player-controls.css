@@ -423,7 +423,7 @@ body.mobile-device .time-display {
   position: absolute;
   height: 5px;
   width: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: #192F4A;
   border-radius: 5px 0 0 5px;
   pointer-events: none;
   z-index: 1;

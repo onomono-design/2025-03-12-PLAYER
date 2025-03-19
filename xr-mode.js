@@ -174,16 +174,69 @@ function completeXRModeSwitch(wasPlaying) {
   // Ensure proper muting
   enforceProperMuting();
   
-  // For mobile devices, add a slight delay before playing
-  const playbackDelay = PlayerState.isMobileDevice ? 1000 : 0;
+  // For mobile devices, add a longer delay and preload check before playing
+  const playbackDelay = PlayerState.isMobileDevice ? 2000 : 500;
+  
+  // Clear any loading message if still showing after delay
+  setTimeout(() => {
+    if (PlayerState.elements.message) {
+      PlayerState.elements.message.style.display = "none";
+    }
+  }, playbackDelay / 2);
   
   if (wasPlaying) {
+    // Show loading indicator for mobile devices
+    if (PlayerState.isMobileDevice && PlayerState.elements.message) {
+      PlayerState.elements.message.textContent = "Preparing 360° scene...";
+      PlayerState.elements.message.style.display = "block";
+    }
+    
     setTimeout(() => {
       if (PlayerState.activeMediaElement) {
-        PlayerState.activeMediaElement.play().catch(error => {
-          console.error('Error playing video after XR mode switch:', error);
-          ErrorLogger.handleError(error, { function: 'completeXRModeSwitch' });
-        });
+        // For mobile, check if video is actually ready before playing
+        if (PlayerState.isMobileDevice) {
+          // Add event listeners to handle loading state
+          const onCanPlay = () => {
+            PlayerState.activeMediaElement.removeEventListener('canplay', onCanPlay);
+            PlayerState.activeMediaElement.play().catch(error => {
+              console.error('Error playing video after XR mode switch:', error);
+              ErrorLogger.handleError(error, { function: 'completeXRModeSwitch' });
+              
+              // Try again with user interaction simulation on mobile
+              if (PlayerState.isMobileDevice && PlayerState.elements.message) {
+                PlayerState.elements.message.textContent = "Tap to continue";
+                PlayerState.elements.message.style.display = "block";
+                
+                // Add one-time click handler to body for user interaction
+                const clickHandler = () => {
+                  document.body.removeEventListener('click', clickHandler);
+                  PlayerState.activeMediaElement.play().catch(e => {
+                    console.error('Error on retry play after user interaction:', e);
+                  });
+                  PlayerState.elements.message.style.display = "none";
+                };
+                document.body.addEventListener('click', clickHandler, { once: true });
+              }
+            });
+            
+            if (PlayerState.elements.message) {
+              PlayerState.elements.message.style.display = "none";
+            }
+          };
+          
+          // Check if already can play
+          if (PlayerState.activeMediaElement.readyState >= 3) {
+            onCanPlay();
+          } else {
+            PlayerState.activeMediaElement.addEventListener('canplay', onCanPlay);
+          }
+        } else {
+          // Desktop just plays directly
+          PlayerState.activeMediaElement.play().catch(error => {
+            console.error('Error playing video after XR mode switch:', error);
+            ErrorLogger.handleError(error, { function: 'completeXRModeSwitch' });
+          });
+        }
       }
     }, playbackDelay);
   }

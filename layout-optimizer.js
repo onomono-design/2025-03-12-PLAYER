@@ -292,7 +292,7 @@ export function fixScrubberLayout() {
     // Style the played progress
     playedProgress.style.position = 'absolute';
     playedProgress.style.height = '100%';
-    playedProgress.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+    playedProgress.style.backgroundColor = '#192F4A';
     playedProgress.style.width = '0%';
     playedProgress.style.zIndex = '2';
     

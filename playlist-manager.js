@@ -394,124 +394,82 @@ function createTrackElement(track, index) {
   // Add track info to track element
   trackElement.appendChild(trackInfo);
   
-  // Add click event listener with IMPROVED direct autoplay approach
+  // Add click event handler
+  // Use a debounce technique to prevent rapid multiple clicks
+  let isProcessingClick = false;
   trackElement.addEventListener('click', (e) => {
     // Add ripple effect
-    addRippleEffect(e, trackElement);
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    trackElement.appendChild(ripple);
     
-    // Add loading indicator
+    // Calculate position of ripple
+    const rect = trackElement.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Set ripple position
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    
+    // Remove ripple after animation
+    setTimeout(() => {
+      ripple.remove();
+    }, 600);
+    
+    // Prevent processing if already processing a click
+    if (isProcessingClick) {
+      console.log('Ignoring click - already processing another click');
+      return;
+    }
+    
+    // Set processing flag
+    isProcessingClick = true;
+    
+    // Add loading class
     trackElement.classList.add('loading');
     
-    // Show loading message
-    if (PlayerState.elements.message) {
-      PlayerState.elements.message.textContent = "Loading track...";
-      PlayerState.elements.message.style.display = "block";
-    }
+    // Get track index
+    const trackIndex = parseInt(trackElement.dataset.index);
+    console.log(`Track clicked: index=${trackIndex}`);
     
-    // Get current active media element before loading new track
-    const previousMediaElement = PlayerState.activeMediaElement;
-    
-    // Pause current playback if any
-    if (previousMediaElement && !previousMediaElement.paused) {
-      previousMediaElement.pause();
-    }
-    
-    // IMPORTANT: Set a flag to indicate this is a direct user interaction
+    // Create touch session checkpoint for mobile
     window.DIRECT_USER_INTERACTION = true;
     
-    // Load the track with autoPlay explicitly set to true
-    loadTrack(index, true);
-    
-    // Additional safety measure: Try to play directly after a short delay
-    // This ensures we attempt playback right after the track is loaded
-    setTimeout(() => {
-      if (PlayerState.activeMediaElement) {
-        console.log('Additional direct play attempt from track click');
-        
-        // If we're in XR mode, ensure proper muting
-        if (PlayerState.isXRMode) {
-          PlayerState.video.muted = false;
-          PlayerState.audio.muted = true;
-        } else {
-          PlayerState.audio.muted = false;
-          PlayerState.video.muted = true;
-        }
-        
-        // Force a play attempt with all available browser tricks
-        import('./player-core.js').then(module => {
-          module.attemptMediaPlayback(
-            PlayerState.activeMediaElement,
-            // Success callback
-            () => {
-              console.log('Additional play attempt succeeded');
-              PlayerState.setPlaybackState(true);
-              
-              import('./player-ui.js').then(uiModule => {
-                uiModule.updatePlayPauseButton(false); // false = playing
-              });
-              
-              // Hide loading message
-              if (PlayerState.elements.message) {
-                PlayerState.elements.message.textContent = "Playing";
-                setTimeout(() => {
-                  if (PlayerState.elements.message && 
-                      PlayerState.elements.message.textContent === "Playing") {
-                    PlayerState.elements.message.style.display = "none";
-                  }
-                }, 1000);
-              }
-              
-              // Remove loading class
-              trackElement.classList.remove('loading');
-            },
-            // Error callback
-            (playError) => {
-              console.error('All play attempts failed:', playError);
-              
-              // One final desperate attempt - click the play button programmatically
-              if (PlayerState.elements.playPauseBtn) {
-                console.log('Final attempt: Clicking play button programmatically');
-                PlayerState.elements.playPauseBtn.click();
-              }
-              
-              // Remove loading class
-              trackElement.classList.remove('loading');
-            }
-          );
-        });
-      }
-    }, 300); // Increased delay to ensure track is loaded
-    
-    // Clear the user interaction flag after 1 second
+    // Clear timeout after a while
     setTimeout(() => {
       window.DIRECT_USER_INTERACTION = false;
-    }, 1000);
+    }, 3000);
+    
+    // Close the playlist after selection on mobile to maximize screen space
+    if (PlayerState.isMobileDevice && 
+        PlayerState.elements.playlistContainer && 
+        PlayerState.elements.playlistContainer.classList.contains('visible')) {
+      // Delay slightly to allow user to see their selection
+      setTimeout(() => {
+        // Find and click the close button
+        const closeButton = document.getElementById('playlistClose');
+        if (closeButton) {
+          closeButton.click();
+        } else {
+          // Fallback - hide manually
+          PlayerState.elements.playlistContainer.classList.remove('visible');
+        }
+      }, 300);
+    }
+    
+    // Load the track with autoplay
+    loadTrack(trackIndex, true);
+    
+    // Reset processing flag after timeout
+    setTimeout(() => {
+      isProcessingClick = false;
+      // Double check that loading class is removed
+      trackElement.classList.remove('loading');
+    }, PlayerState.isMobileDevice ? 2000 : 1000);
   });
   
   return trackElement;
-}
-
-/**
- * Add ripple effect to an element on click
- * @param {MouseEvent} event - The click event
- * @param {HTMLElement} element - The element to add the ripple to
- */
-function addRippleEffect(event, element) {
-  const rect = element.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  
-  const ripple = document.createElement('span');
-  ripple.className = 'ripple';
-  ripple.style.left = `${x}px`;
-  ripple.style.top = `${y}px`;
-  
-  element.appendChild(ripple);
-  
-  // Remove ripple after animation completes
-  setTimeout(() => {
-    ripple.remove();
-  }, 600);
 }
 
 /**
@@ -533,58 +491,53 @@ function getGlobalTrackIndex(track) {
  */
 export function loadTrack(index, autoPlay = false) {
   try {
-    // Validate index
-    if (index < 0 || index >= PlayerState.playlist.length) {
-      throw new Error(`Invalid track index: ${index}`);
-    }
-    
     console.log(`Loading track at index ${index}, autoPlay: ${autoPlay}`);
     
-    // Get the track
-    const track = PlayerState.playlist[index];
-    
-    // Check if this is already the current track - avoid redundant loading
-    if (PlayerState.currentTrackIndex === index && PlayerState.isAudioPreloaded) {
-      console.log(`Track ${index} is already loaded`);
-      
-      // If autoPlay is requested but track is not playing, start playback
-      if (autoPlay && PlayerState.audio && PlayerState.audio.paused) {
-        PlayerState.audio.play()
-          .then(() => {
-            console.log('Started playback of already-loaded track');
-          })
-          .catch(error => {
-            ErrorLogger.handleError(error, { function: 'loadTrack', track: track.title });
-          });
-      }
-      return;
+    // Validate index
+    if (index < 0 || index >= PlayerState.playlist.length) {
+      console.error(`Invalid track index: ${index}`);
+      return false;
     }
     
-    // Update current track index
-    PlayerState.setCurrentTrack(index);
+    // Get track data
+    const track = PlayerState.playlist[index];
+    if (!track) {
+      console.error(`Track not found at index ${index}`);
+      return false;
+    }
     
-    // Update UI to show the track is loading
+    console.log(`Loading track: "${track.title}" from playlist "${track.playlistName}"`);
+    
+    // Find track element and add loading class
+    const trackElement = document.querySelector(`.playlist-track[data-index="${index}"]`);
+    if (trackElement) {
+      trackElement.classList.add('loading');
+    }
+    
+    // Update track indexes
+    const previousTrackIndex = PlayerState.currentTrackIndex;
+    PlayerState.currentTrackIndex = index;
+    
+    // Update active track in UI
+    const trackElements = document.querySelectorAll('.playlist-track');
+    trackElements.forEach(el => {
+      if (parseInt(el.dataset.index) === index) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
+    
+    // Store current playback state
+    const wasPlaying = PlayerState.isPlaying;
+    
+    // Show loading message
     if (PlayerState.elements.message) {
-      PlayerState.elements.message.textContent = "Loading track...";
+      PlayerState.elements.message.textContent = `Loading "${track.title}"...`;
       PlayerState.elements.message.style.display = "block";
     }
     
-    // Update active track in playlist UI
-    updateActiveTrackInPlaylist(index);
-    
-    // Update audio player UI immediately
-    updateAudioPlayerUI(
-      track.title, 
-      track.artist || track.playlistName, 
-      track.artworkUrl
-    );
-    
-    // Update video info if available
-    if (track.videoSrc) {
-      updateVideoInfo(track.title, track.playlistName);
-    }
-    
-    // Reset preloaded flags
+    // Reset preload flags
     PlayerState.isAudioPreloaded = false;
     PlayerState.isVideoPreloaded = false;
     
@@ -597,6 +550,18 @@ export function loadTrack(index, autoPlay = false) {
       }
     };
     
+    // Pause current media before loading new track
+    if (PlayerState.audio) PlayerState.audio.pause();
+    if (PlayerState.video) PlayerState.video.pause();
+    
+    // Clear any pending playback attempt timeout
+    if (window.playbackAttemptTimeout) {
+      clearTimeout(window.playbackAttemptTimeout);
+    }
+    
+    // Mobile-specific optimizations for loading
+    const loadTimeout = PlayerState.isMobileDevice ? 1500 : 500;
+    
     // Set media sources and prepare for playback immediately
     if (PlayerState.audio) {
       PlayerState.audio.src = track.audioSrc;
@@ -604,8 +569,34 @@ export function loadTrack(index, autoPlay = false) {
     }
     
     if (PlayerState.video && track.videoSrc) {
-      PlayerState.video.src = track.videoSrc;
-      PlayerState.video.load();
+      // For mobile devices, we'll use a sequential loading approach
+      if (PlayerState.isMobileDevice) {
+        // First prioritize loading the audio
+        const onAudioReady = () => {
+          if (PlayerState.audio) {
+            PlayerState.audio.removeEventListener('canplaythrough', onAudioReady);
+            
+            // Then start loading video
+            if (PlayerState.video) {
+              PlayerState.video.src = track.videoSrc;
+              PlayerState.video.load();
+            }
+          }
+        };
+        
+        // Listen for audio ready state
+        if (PlayerState.audio.readyState >= 3) {
+          // Audio already ready, load video right away
+          PlayerState.video.src = track.videoSrc;
+          PlayerState.video.load();
+        } else {
+          PlayerState.audio.addEventListener('canplaythrough', onAudioReady, { once: true });
+        }
+      } else {
+        // Desktop just loads both concurrently
+        PlayerState.video.src = track.videoSrc;
+        PlayerState.video.load();
+      }
     } else if (PlayerState.video) {
       // Clear video source if track doesn't have one
       PlayerState.video.removeAttribute('src');
@@ -632,7 +623,10 @@ export function loadTrack(index, autoPlay = false) {
         
         // Now attempt playback if requested
         if (autoPlay) {
-          attemptPlaybackWithRetry();
+          // Add a slight delay for mobile devices to ensure resources are loaded
+          setTimeout(() => {
+            attemptPlaybackWithRetry();
+          }, PlayerState.isMobileDevice ? loadTimeout : 0);
         }
       }
     } else {
@@ -641,149 +635,37 @@ export function loadTrack(index, autoPlay = false) {
       
       // Now attempt playback if requested
       if (autoPlay) {
-        attemptPlaybackWithRetry();
-      }
-    }
-    
-    // Start preloading in the background
-    preloadTrackMedia(track)
-      .then(() => {
-        console.log('Track media preloaded successfully');
-        removeLoadingIndicators();
-        
-        // If autoPlay was requested but playback hasn't started yet, try again
-        if (autoPlay && PlayerState.activeMediaElement && PlayerState.activeMediaElement.paused) {
-          console.log('Track preloaded but not playing yet - trying again');
+        // Add a slight delay for mobile devices to ensure resources are loaded
+        setTimeout(() => {
           attemptPlaybackWithRetry();
+        }, PlayerState.isMobileDevice ? loadTimeout : 0);
+      }
+    }
+    
+    // Dispatch event for other components to react
+    document.dispatchEvent(new CustomEvent('current-track-changed', { 
+      detail: { 
+        track,
+        index,
+        previousIndex: previousTrackIndex
+      } 
+    }));
+    
+    // Hide loading message after a delay if not autoplay
+    if (!autoPlay) {
+      setTimeout(() => {
+        if (PlayerState.elements.message && 
+            PlayerState.elements.message.textContent === `Loading "${track.title}"...`) {
+          PlayerState.elements.message.style.display = "none";
         }
-      })
-      .catch(error => {
-        ErrorLogger.handleError(error, { function: 'loadTrack.preload' });
         removeLoadingIndicators();
-      });
-    
-    // Improved function to attempt playback with retry
-    function attemptPlaybackWithRetry() {
-      // Check if we have a direct user interaction context
-      const hasDirectUserInteraction = window.DIRECT_USER_INTERACTION === true;
-      console.log(`Attempting playback with${hasDirectUserInteraction ? '' : 'out'} direct user interaction`);
-      
-      // If we're in a direct user interaction, try playing directly first
-      if (hasDirectUserInteraction && PlayerState.activeMediaElement) {
-        console.log('Direct play attempt with user interaction');
-        
-        // Set proper mute states
-        if (PlayerState.isXRMode) {
-          PlayerState.video.muted = false;
-          PlayerState.audio.muted = true;
-        } else {
-          PlayerState.audio.muted = false;
-          PlayerState.video.muted = true;
-        }
-        
-        // Try direct play first
-        const playPromise = PlayerState.activeMediaElement.play();
-        
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            console.log('Direct play succeeded');
-            
-            // Update playback state
-            PlayerState.setPlaybackState(true);
-            
-            // Update UI
-            import('./player-ui.js').then(module => {
-              module.updatePlayPauseButton(false); // false = playing
-            });
-            
-            // Hide loading message
-            if (PlayerState.elements.message) {
-              PlayerState.elements.message.textContent = "Playing";
-              setTimeout(() => {
-                if (PlayerState.elements.message && 
-                    PlayerState.elements.message.textContent === "Playing") {
-                  PlayerState.elements.message.style.display = "none";
-                }
-              }, 1000);
-            }
-          }).catch(error => {
-            console.warn('Direct play failed, falling back to helper:', error);
-            fallbackToHelper();
-          });
-        } else {
-          // Browser doesn't support promises on media elements
-          console.log('Browser does not support play promises, falling back to helper');
-          fallbackToHelper();
-        }
-      } else {
-        // No direct user interaction, use helper directly
-        fallbackToHelper();
-      }
-      
-      // Helper function to use the attemptMediaPlayback helper
-      function fallbackToHelper() {
-        import('./player-core.js').then(module => {
-          module.attemptMediaPlayback(
-            PlayerState.activeMediaElement,
-            // Success callback
-            () => {
-              console.log('Helper play succeeded');
-              
-              // Update playback state
-              PlayerState.setPlaybackState(true);
-              
-              // Update UI
-              import('./player-ui.js').then(module => {
-                module.updatePlayPauseButton(false); // false = playing
-              });
-              
-              // Hide loading message
-              if (PlayerState.elements.message) {
-                PlayerState.elements.message.textContent = "Playing";
-                setTimeout(() => {
-                  if (PlayerState.elements.message && 
-                      PlayerState.elements.message.textContent === "Playing") {
-                    PlayerState.elements.message.style.display = "none";
-                  }
-                }, 1000);
-              }
-            },
-            // Error callback
-            (error) => {
-              console.error('Failed to autoplay track:', error);
-              ErrorLogger.handleError(error, { function: 'loadTrack.autoplay' });
-              
-              // Last resort - try clicking the play button programmatically
-              if (PlayerState.elements.playPauseBtn) {
-                console.log('Last resort: Clicking play button programmatically');
-                PlayerState.elements.playPauseBtn.click();
-              } else {
-                // Show message about autoplay being blocked
-                if (PlayerState.elements.message) {
-                  PlayerState.elements.message.textContent = "Track loaded. Click play to start.";
-                  setTimeout(() => {
-                    if (PlayerState.elements.message && 
-                        PlayerState.elements.message.textContent === "Track loaded. Click play to start.") {
-                      PlayerState.elements.message.style.display = "none";
-                    }
-                  }, 3000);
-                }
-              }
-            }
-          );
-        }).catch(error => {
-          ErrorLogger.handleError(error, { function: 'loadTrack.importPlayerCore' });
-        });
-      }
+      }, loadTimeout);
     }
+    
+    return true;
   } catch (error) {
-    ErrorLogger.handleError(error, { function: 'loadTrack', index });
-    
-    // Remove loading indicators even if there was an error
-    const trackElement = document.querySelector(`.playlist-track[data-index="${index}"]`);
-    if (trackElement) {
-      trackElement.classList.remove('loading');
-    }
+    ErrorLogger.handleError(error, { function: 'loadTrack' });
+    return false;
   }
 }
 
