@@ -414,6 +414,141 @@
           "duration": "3:30"
         }
       ]
+    },
+    {
+      "playlist_name": "Coffee Country",
+      "tracks": [
+        {
+          "chapter": 1,
+          "title": "Arriving in the Mission",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+1+Arriving+in+the+Mission.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-01.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:01"
+        },
+        {
+          "chapter": 2,
+          "title": "El Salvador's Refugees",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+2+El+Salvador_s+Refugees.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-02.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:43"
+        },
+        {
+          "chapter": 3,
+          "title": "Placekeeping in the Mission",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+3+Placekeeping+in+San+Francisco.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-03.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:28"
+        },
+        {
+          "chapter": 4,
+          "title": "If Walls Could Talk",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+4+If+Walls+Could+Talk.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-04.png",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:57"
+        },
+        {
+          "chapter": 5,
+          "title": "Coffee at Temos",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+5+Coffee+at+Temos.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-05.png",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:58"
+        },
+        {
+          "chapter": 6,
+          "title": "Jorge's Journey",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+6+Jorge_s+Journey.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-06.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "8:56"
+        },
+        {
+          "chapter": 7,
+          "title": "Starting the Sanctuary Movement",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+7+Starting+the+Sanctuary+Movement.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-07.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "3:36"
+        },
+        {
+          "chapter": 8,
+          "title": "A Sanctuary City",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+8++A+Sanctuary+City.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-08.jpeg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:18"
+        },
+        {
+          "chapter": 9,
+          "title": "Gentrification and Eviction",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+9+Gentrification+and+Eviction.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-09.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:22"
+        },
+        {
+          "chapter": 10,
+          "title": "La Lucha Sigue",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+10+La+Lucha+Sigue.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-10.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:04"
+        },
+        {
+          "chapter": 11,
+          "title": "Neighborhood of Sun",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+11+Neighborhood+of+Sun.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-11.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:52"
+        },
+        {
+          "chapter": 12,
+          "title": "The Mission Family",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+12+The+Mission+Family.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-12.jpg",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:57"
+        },
+        {
+          "chapter": 13,
+          "title": "Thank You",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-MP3s/Chapter+13+Thank+You.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-18-MISSION-WALKING-TOUR/2025-03-18-MISSION-ART/2025-03-18-MISSION-ART-13.png",
+          "playlist": "Coffee Country",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "0:45"
+        }
+      ]
     }
   ]
 }
