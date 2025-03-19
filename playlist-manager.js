@@ -15,6 +15,11 @@ const DEFAULT_PLAYLIST_URL = 'playlist.json';
 // Track if playlist is currently loading
 let isPlaylistLoading = false;
 
+// Track if a local playlist cache is available
+let localPlaylistCache = null;
+let playlistLastLoaded = 0;
+const PLAYLIST_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+
 /**
  * Initialize the playlist functionality
  */
@@ -83,6 +88,14 @@ export function loadPlaylistData(url = DEFAULT_PLAYLIST_URL) {
     return;
   }
   
+  // Check if we have a valid cached playlist
+  const now = Date.now();
+  if (localPlaylistCache && (now - playlistLastLoaded) < PLAYLIST_CACHE_TTL) {
+    console.log('Using cached playlist data');
+    processPlaylistData(localPlaylistCache);
+    return;
+  }
+  
   isPlaylistLoading = true;
   console.log(`Loading playlist data from ${url}...`);
   
@@ -92,7 +105,15 @@ export function loadPlaylistData(url = DEFAULT_PLAYLIST_URL) {
     PlayerState.elements.message.style.display = "block";
   }
   
-  fetch(url)
+  // Add cache-busting only if it's been more than a day since last load
+  const fetchUrl = (now - playlistLastLoaded) > PLAYLIST_CACHE_TTL ? 
+    `${url}?t=${now}` : url;
+  
+  fetch(fetchUrl, {
+    headers: {
+      'Cache-Control': 'max-age=3600'  // Tell browser to cache for 1 hour
+    }
+  })
     .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -101,6 +122,10 @@ export function loadPlaylistData(url = DEFAULT_PLAYLIST_URL) {
     })
     .then(data => {
       console.log('Playlist data loaded successfully');
+      
+      // Cache the playlist data
+      localPlaylistCache = data;
+      playlistLastLoaded = now;
       
       // Process the playlist data
       processPlaylistData(data);
@@ -146,28 +171,57 @@ export function loadPlaylistData(url = DEFAULT_PLAYLIST_URL) {
 function processPlaylistData(data) {
   try {
     // Validate playlist data
-    if (!data || !Array.isArray(data.tracks) || data.tracks.length === 0) {
+    if (!data || !Array.isArray(data.tracks) && !Array.isArray(data.playlists)) {
       throw new Error('Invalid playlist data format');
     }
     
-    console.log(`Processing ${data.tracks.length} tracks`);
+    // Handle different playlist formats
+    let tracks = [];
+    
+    if (Array.isArray(data.tracks)) {
+      tracks = data.tracks;
+    } else if (Array.isArray(data.playlists)) {
+      // Handle grouped playlists format
+      data.playlists.forEach(playlist => {
+        if (playlist.tracks && Array.isArray(playlist.tracks)) {
+          playlist.tracks.forEach(track => {
+            track.playlistName = track.playlistName || track.playlist || playlist.playlist_name || 'Uncategorized';
+            tracks.push(track);
+          });
+        }
+      });
+    }
+    
+    if (tracks.length === 0) {
+      throw new Error('No tracks found in playlist data');
+    }
+    
+    console.log(`Processing ${tracks.length} tracks`);
+    
+    // Normalize track data
+    const normalizedTracks = tracks.map(track => {
+      return {
+        title: track.title || 'Unknown Title',
+        audioSrc: track.audioSrc || track.audio_url || '',
+        videoSrc: track.videoSrc || track.XR_Scene || track.video_url || '',
+        artworkUrl: track.artworkUrl || track.artwork_url || '',
+        playlistName: track.playlistName || track.playlist || 'Uncategorized',
+        chapter: track.chapter || 0,
+        duration: track.duration || '0:00',
+        isAR: track.isAR || track.IsAR || false
+      };
+    }).filter(track => track.audioSrc); // Only keep tracks with an audio source
     
     // Organize tracks by playlist
     const playlistGroups = {};
     const flatPlaylist = [];
     
-    data.tracks.forEach(track => {
-      // Ensure track has required properties
-      if (!track.title || !track.audioSrc) {
-        console.warn('Skipping invalid track:', track);
-        return;
-      }
-      
+    normalizedTracks.forEach(track => {
       // Add track to flat playlist
       flatPlaylist.push(track);
       
       // Group by playlist name
-      const playlistName = track.playlistName || 'Uncategorized';
+      const playlistName = track.playlistName;
       if (!playlistGroups[playlistName]) {
         playlistGroups[playlistName] = [];
       }
@@ -488,6 +542,23 @@ export function loadTrack(index, autoPlay = false) {
     
     // Get the track
     const track = PlayerState.playlist[index];
+    
+    // Check if this is already the current track - avoid redundant loading
+    if (PlayerState.currentTrackIndex === index && PlayerState.isAudioPreloaded) {
+      console.log(`Track ${index} is already loaded`);
+      
+      // If autoPlay is requested but track is not playing, start playback
+      if (autoPlay && PlayerState.audio && PlayerState.audio.paused) {
+        PlayerState.audio.play()
+          .then(() => {
+            console.log('Started playback of already-loaded track');
+          })
+          .catch(error => {
+            ErrorLogger.handleError(error, { function: 'loadTrack', track: track.title });
+          });
+      }
+      return;
+    }
     
     // Update current track index
     PlayerState.setCurrentTrack(index);

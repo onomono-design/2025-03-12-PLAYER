@@ -420,190 +420,67 @@ export function toggleMute() {
 }
 
 /**
- * Ensure proper muting based on current mode
- */
-export function enforceProperMuting() {
-  if (PlayerState.isXRMode) {
-    // In XR mode, video should be unmuted and audio should be muted
-    PlayerState.video.muted = false;
-    PlayerState.audio.muted = true;
-  } else {
-    // In audio mode, audio should be unmuted and video should be muted
-    PlayerState.audio.muted = false;
-    PlayerState.video.muted = true;
-  }
-  
-  // Update the mute button
-  updateMuteButton();
-}
-
-/**
- * Set up synchronization between audio and video elements
+ * Set up media synchronization to keep audio and video in sync
  */
 export function setupMediaSync() {
-  console.log('Setting up media synchronization');
+  console.log('Setting up media synchronization...');
   
-  if (!PlayerState.audio || !PlayerState.video) {
-    console.error('Media elements not found');
-    return;
+  try {
+    // Clear any existing sync interval
+    if (syncInterval) {
+      clearInterval(syncInterval);
+      syncInterval = null;
+    }
+    
+    // Set up a new sync interval
+    syncInterval = setInterval(() => {
+      // Only sync if both media elements exist and one of them is playing
+      if (PlayerState.audio && PlayerState.video && 
+          (!PlayerState.audio.paused || !PlayerState.video.paused)) {
+        syncMediaPlayback();
+      }
+    }, 1000); // Check sync every second
+    
+    // Clean up the interval when the page is unloaded
+    window.addEventListener('beforeunload', () => {
+      if (syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+      }
+    });
+    
+    console.log('Media synchronization set up');
+  } catch (error) {
+    ErrorLogger.handleError(error, { function: 'setupMediaSync' });
   }
-  
-  // Set up event listeners for synchronization
-  
-  // 1. Sync on seeking (when user scrubs)
-  PlayerState.audio.addEventListener('seeking', syncVideoToAudio);
-  PlayerState.video.addEventListener('seeking', syncAudioToVideo);
-  
-  // 2. Sync on play/pause
-  PlayerState.audio.addEventListener('play', () => {
-    if (PlayerState.isXRMode) {
-      // If we're in XR mode but audio starts playing, immediately mute it
-      console.log("Audio play event while in XR mode - muting audio");
-      PlayerState.audio.muted = true;
-      return;
-    }
-    
-    // Keep video in sync but ensure it's muted
-    PlayerState.video.currentTime = PlayerState.audio.currentTime;
-    
-    // Always ensure video is muted when in audio mode
-    PlayerState.video.muted = true;
-    
-    // Play video silently to keep it in sync
-    console.log("Playing silent video for sync");
-    const videoPlayPromise = PlayerState.video.play();
-    if (videoPlayPromise !== undefined) {
-      videoPlayPromise.catch(error => {
-        console.error('Error playing silent video for sync:', error);
-      });
-    }
-    
-    startSyncInterval();
-  });
-  
-  PlayerState.video.addEventListener('play', () => {
-    if (!PlayerState.isXRMode) {
-      // If we're in audio mode but video starts playing, immediately mute it
-      console.log("Video play event while in audio mode - muting video");
-      PlayerState.video.muted = true;
-      return;
-    }
-    
-    // Keep audio in sync but ensure it's muted
-    PlayerState.audio.currentTime = PlayerState.video.currentTime;
-    
-    // Always ensure audio is muted when in XR mode
-    PlayerState.audio.muted = true;
-    
-    // Play audio silently to keep it in sync
-    console.log("Playing silent audio for sync");
-    const audioPlayPromise = PlayerState.audio.play();
-    if (audioPlayPromise !== undefined) {
-      audioPlayPromise.catch(error => {
-        console.error('Error playing silent audio for sync:', error);
-      });
-    }
-    
-    startSyncInterval();
-  });
-  
-  PlayerState.audio.addEventListener('pause', () => {
-    if (PlayerState.isXRMode) return;
-    
-    // Pause video when audio pauses
-    console.log("Pausing video because audio paused");
-    PlayerState.video.pause();
-    stopSyncInterval();
-  });
-  
-  PlayerState.video.addEventListener('pause', () => {
-    if (!PlayerState.isXRMode) return;
-    
-    // Pause audio when video pauses
-    console.log("Pausing audio because video paused");
-    PlayerState.audio.pause();
-    stopSyncInterval();
-  });
 }
 
 /**
- * Start the synchronization interval
+ * Enforce proper muting to prevent double audio playback
  */
-function startSyncInterval() {
-  if (syncInterval) clearInterval(syncInterval);
-  
-  // Use a more frequent sync interval for better accuracy
-  syncInterval = setInterval(() => {
-    if (!PlayerState.isSeeking) {
-      // Check if the active media element is playing
-      if (PlayerState.activeMediaElement && !PlayerState.activeMediaElement.paused) {
-        if (PlayerState.isXRMode) {
-          // Only sync if video time is within valid audio duration
-          if (PlayerState.video.currentTime < PlayerState.audio.duration - 0.5) {
-            // Check if the time difference is significant
-            const timeDifference = Math.abs(PlayerState.audio.currentTime - PlayerState.video.currentTime);
-            if (timeDifference > 0.3) {
-              console.log(`Periodic sync: Audio (${PlayerState.audio.currentTime.toFixed(2)}) and Video (${PlayerState.video.currentTime.toFixed(2)}) out of sync by ${timeDifference.toFixed(2)}s`);
-              syncAudioToVideo();
-            }
-          } else {
-            console.log(`Skipping sync: video time ${PlayerState.video.currentTime.toFixed(2)} exceeds audio duration ${PlayerState.audio.duration.toFixed(2)}`);
-          }
-        } else {
-          // Only sync if audio time is within valid video duration
-          if (PlayerState.audio.currentTime < PlayerState.video.duration - 0.5) {
-            // Check if the time difference is significant
-            const timeDifference = Math.abs(PlayerState.video.currentTime - PlayerState.audio.currentTime);
-            if (timeDifference > 0.3) {
-              console.log(`Periodic sync: Video (${PlayerState.video.currentTime.toFixed(2)}) and Audio (${PlayerState.audio.currentTime.toFixed(2)}) out of sync by ${timeDifference.toFixed(2)}s`);
-              syncVideoToAudio();
-            }
-          } else {
-            console.log(`Skipping sync: audio time ${PlayerState.audio.currentTime.toFixed(2)} exceeds video duration ${PlayerState.video.duration.toFixed(2)}`);
-          }
-        }
+export function enforceProperMuting() {
+  try {
+    // Skip if media elements are not available
+    if (!PlayerState.audio || !PlayerState.video) {
+      return;
+    }
+    
+    // If audio is playing, mute the video
+    if (!PlayerState.audio.paused) {
+      if (!PlayerState.video.muted) {
+        console.log('Muting video to prevent double audio playback');
+        PlayerState.video.muted = true;
       }
     }
-  }, 1000); // Check every second
-}
-
-/**
- * Stop the synchronization interval
- */
-function stopSyncInterval() {
-  if (syncInterval) {
-    clearInterval(syncInterval);
-    syncInterval = null;
-  }
-}
-
-/**
- * Sync video time to match audio time
- */
-function syncVideoToAudio() {
-  if (!PlayerState.audio || !PlayerState.video) return;
-  
-  // Only sync if the difference is significant (more than 0.3 seconds)
-  // This prevents unnecessary syncs that could cause stuttering
-  const timeDifference = Math.abs(PlayerState.video.currentTime - PlayerState.audio.currentTime);
-  if (timeDifference > 0.3) {
-    console.log(`Syncing video to audio: Video time ${PlayerState.video.currentTime.toFixed(2)} -> Audio time ${PlayerState.audio.currentTime.toFixed(2)}`);
-    PlayerState.video.currentTime = PlayerState.audio.currentTime;
-  }
-}
-
-/**
- * Sync audio time to match video time
- */
-function syncAudioToVideo() {
-  if (!PlayerState.audio || !PlayerState.video) return;
-  
-  // Only sync if the difference is significant (more than 0.3 seconds)
-  // This prevents unnecessary syncs that could cause stuttering
-  const timeDifference = Math.abs(PlayerState.audio.currentTime - PlayerState.video.currentTime);
-  if (timeDifference > 0.3) {
-    console.log(`Syncing audio to video: Audio time ${PlayerState.audio.currentTime.toFixed(2)} -> Video time ${PlayerState.video.currentTime.toFixed(2)}`);
-    PlayerState.audio.currentTime = PlayerState.video.currentTime;
+    
+    // Update mute button
+    import('./player-ui.js').then(module => {
+      module.updateMuteButton();
+    }).catch(error => {
+      console.error('Error updating mute button:', error);
+    });
+  } catch (error) {
+    console.error('Error enforcing proper muting:', error);
   }
 }
 
@@ -1055,4 +932,69 @@ function tryPlayWithSilentAudio() {
       reject(error);
     }
   });
+}
+
+/**
+ * Synchronize media playback between audio and video
+ */
+function syncMediaPlayback() {
+  try {
+    // Skip sync if we don't have both media elements
+    if (!PlayerState.audio || !PlayerState.video) {
+      return;
+    }
+    
+    // Skip sync if user is seeking
+    if (PlayerState.isSeeking) {
+      return;
+    }
+    
+    const audio = PlayerState.audio;
+    const video = PlayerState.video;
+    
+    // Only sync if one or both elements are playing
+    if (audio.paused && video.paused) {
+      return;
+    }
+    
+    // Calculate time difference
+    const timeDiff = Math.abs(audio.currentTime - video.currentTime);
+    
+    // Only sync if the difference is significant (more than 0.3 seconds)
+    if (timeDiff > 0.3) {
+      console.log(`Media out of sync by ${timeDiff.toFixed(2)}s - synchronizing`);
+      
+      // Determine the primary media element based on which one is playing
+      if (!audio.paused && video.paused) {
+        // Audio is playing but video is paused
+        video.currentTime = audio.currentTime;
+        
+        // If we're in XR mode, also play the video
+        if (PlayerState.isXRMode) {
+          video.play().catch(error => {
+            console.error('Error playing video during sync:', error);
+          });
+        }
+      } else if (audio.paused && !video.paused) {
+        // Video is playing but audio is paused
+        audio.currentTime = video.currentTime;
+        
+        // If we're not in XR mode, also play the audio
+        if (!PlayerState.isXRMode) {
+          audio.play().catch(error => {
+            console.error('Error playing audio during sync:', error);
+          });
+        }
+      } else {
+        // Both are playing - sync based on mode
+        if (PlayerState.isXRMode) {
+          audio.currentTime = video.currentTime;
+        } else {
+          video.currentTime = audio.currentTime;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error synchronizing media playback:', error);
+  }
 } 
