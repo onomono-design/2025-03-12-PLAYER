@@ -1,11 +1,23 @@
+:root {
+  --navy: #182F48;
+  --yellow: #FCE676;
+  --pink: #EBA6B1;
+  --purple: #B1AFDA;
+  --blue: #81C7D3;
+  --creme: #FFFDEC;
+  --red: #D22D0B;
+  --green: #4A7446;
+}
+
 body { 
   margin: 0; 
   overflow: hidden; 
   font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-weight: 400;
   position: relative;
-  background-color: #121212;
-  color: white;
+  max-height: 1100px;
+  max-width: 520px;
+  color: var(--creme);
 }
 
 /* Audio Player Container */
@@ -20,6 +32,7 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 10;
+  background-color: var(--navy);
   transition: opacity 0.5s ease;
 }
 
@@ -33,7 +46,7 @@ body {
   border-radius: 15px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  background-color: #000;
+  background-color: var(--navy);
 }
 
 .album-artwork img {
@@ -57,8 +70,8 @@ body {
   bottom: 15px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
+  background: rgba(255, 253, 236, 0.95);
+  color: var(--navy);
   border: none;
   border-radius: 1em;
   padding: 10px 20px;
@@ -74,7 +87,7 @@ body {
 }
 
 .view-xr-button:hover {
-  background: rgba(255, 255, 255, 1);
+  background: var(--creme);
   transform: translateX(-50%) scale(1.05);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
@@ -117,7 +130,7 @@ body {
   top: 15px;
   left: 15px;
   background: rgba(255, 255, 255, 0.95);
-  color: #333;
+  color: var(--navy);
   border: none;
   border-radius: 1em;
   padding: 8px 15px;
@@ -134,7 +147,7 @@ body {
 }
 
 .exit-xr-button:hover {
-  background: rgba(255, 255, 255, 1);
+  background: var(--creme);
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
@@ -218,7 +231,7 @@ body.mobile-device.landscape .album-artwork {
   transform: translateX(-50%);
   width: 100%;
   max-width: 400px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 253, 236, 0.95);
   border-radius: 1em;
   padding: 15px 15px 12px 15px;
   z-index: 100;
@@ -253,7 +266,7 @@ body.mobile-device.landscape .album-artwork {
 }
 
 .video-info {
-  color: #333;
+  color: var(--navy);
   font-size: 14px;
   text-align: center;
   font-family: 'Figtree', sans-serif;
@@ -299,13 +312,13 @@ body.mobile-device .video-info {
 }
 
 .permission-content {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 253, 236, 0.95);
   border-radius: 15px;
   padding: 30px;
   max-width: 90%;
   width: 400px;
   text-align: center;
-  color: #333;
+  color: var(--navy);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
@@ -313,7 +326,7 @@ body.mobile-device .video-info {
   margin-top: 0;
   font-weight: 600;
   font-size: 24px;
-  color: #333;
+  color: var(--navy);
 }
 
 .permission-content p {
@@ -324,8 +337,8 @@ body.mobile-device .video-info {
 }
 
 .permission-button {
-  background-color: #4285f4;
-  color: white;
+  background-color: var(--green);
+  color: var(--creme);
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
@@ -338,7 +351,7 @@ body.mobile-device .video-info {
 }
 
 .permission-button:hover {
-  background-color: #3367d6;
+  background-color: #0b411d;
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -361,7 +374,7 @@ body.mobile-device.landscape .scrubber-container {
 
 /* Time display styles */
 .time-display {
-  color: #333;
+  color: var(--navy);
   font-size: 12px;
   min-width: 50px;
   text-align: center;
@@ -439,7 +452,7 @@ body.mobile-device .time-display {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: #333;
+  background: var(--navy);
   cursor: pointer;
   position: relative;
   z-index: 3;
@@ -454,7 +467,7 @@ body.mobile-device .time-display {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: #333;
+  background: var(--navy);
   cursor: pointer;
   border: none;
   position: relative;
@@ -600,7 +613,7 @@ body.mobile-device .main-controls {
 /* Standardize corner roundness for buttons */
 .control-button {
   background: transparent;
-  color: #333;
+  color: var(--navy);
   border: none;
   font-size: 22px;
   cursor: pointer;
@@ -706,7 +719,7 @@ body.mobile-device #playPauseBtn {
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
-  color: #333;
+  color: var(--navy);
   background: rgba(255, 255, 255, 0.95);
   padding: 10px 15px;
   border-radius: 1em;
@@ -837,7 +850,7 @@ body.mobile-device #playPauseBtn {
 .playlist-title {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: var(--navy);
   margin: 0 0 5px 0;
 }
 
@@ -893,7 +906,7 @@ body.mobile-device #playPauseBtn {
   transition: background-color 0.2s ease;
   display: flex;
   align-items: center;
-  color: #333;
+  color: var(--navy);
   width: 100%;
   box-sizing: border-box;
 }
@@ -918,7 +931,7 @@ body.mobile-device #playPauseBtn {
   transition: background-color 0.2s ease;
   display: flex;
   align-items: center;
-  color: #333;
+  color: var(--navy);
   width: 100%;
   box-sizing: border-box;
 }
@@ -936,7 +949,7 @@ body.mobile-device #playPauseBtn {
   transition: background-color 0.2s ease;
   display: flex;
   align-items: center;
-  color: #333;
+  color: var(--navy);
   width: 100%;
   box-sizing: border-box;
 }
@@ -957,7 +970,7 @@ body.mobile-device #playPauseBtn {
 .track-title {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--navy);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1031,7 +1044,7 @@ body.mobile-device #playPauseBtn {
   transition: background-color 0.2s, transform 0.1s;
   display: flex;
   align-items: center;
-  color: #333;
+  color: var(--navy);
   position: relative;
   min-height: 40px; /* Add consistent minimum height */
   box-sizing: border-box;
@@ -1059,7 +1072,7 @@ body.mobile-device #playPauseBtn {
   height: 24px;
   border-radius: 0.5em;
   background-color: rgba(0, 0, 0, 0.1);
-  color: #333;
+  color: var(--navy);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1076,7 +1089,7 @@ body.mobile-device #playPauseBtn {
 .track-title {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--navy);
   margin: 0 0 3px 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1092,7 +1105,7 @@ body.mobile-device #playPauseBtn {
 .playlist-toggle {
   position: relative;
   background-color: transparent;
-  color: #333;
+  color: var(--navy);
   border: none;
   font-size: 22px;
   cursor: pointer;
@@ -1228,7 +1241,7 @@ body.playlist-open .player-controls {
   transform: translateX(-50%);
   margin-bottom: 15px; /* Space between button and player controls */
   background: rgba(255, 255, 255, 0.95);
-  color: #333;
+  color: var(--navy);
   border: none;
   border-radius: 1em;
   padding: 8px 15px;
@@ -1447,7 +1460,7 @@ body.scrubbing .scrubber::-moz-range-thumb {
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
-  color: #333;
+  color: var(--navy);
   position: relative;
   min-height: 40px; /* Add consistent minimum height */
   box-sizing: border-box;
@@ -1504,7 +1517,7 @@ body.scrubbing .scrubber::-moz-range-thumb {
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
-  color: #333;
+  color: var(--navy);
   background-color: rgba(0, 0, 0, 0.03);
 }
 

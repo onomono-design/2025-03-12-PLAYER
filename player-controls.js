@@ -2352,21 +2352,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     // Add back button to return to folders view
-    const backButton = document.createElement('li');
-    backButton.className = 'playlist-back';
-    backButton.innerHTML = `
-      <div class="back-icon"><i class="fas fa-arrow-left"></i></div>
-      <div class="back-text">Back to Tours</div>
-    `;
+    // const backButton = document.createElement('li');
+    // backButton.className = 'playlist-back';
+    // backButton.innerHTML = `
+    //   <div class="back-icon"><i class="fas fa-arrow-left"></i></div>
+    //   <div class="back-text">Back to Tours</div>
+    // `;
     
-    // Add click handler to go back to folders view
-    backButton.addEventListener('click', (event) => {
-      event.stopPropagation(); // Prevent event bubbling
-      console.log('Back button clicked, returning to folders view');
-      populatePlaylistFolders();
-    });
+    // // Add click handler to go back to folders view
+    // backButton.addEventListener('click', (event) => {
+    //   event.stopPropagation(); // Prevent event bubbling
+    //   console.log('Back button clicked, returning to folders view');
+    //   populatePlaylistFolders();
+    // });
     
-    playlistTracks.appendChild(backButton);
+    // playlistTracks.appendChild(backButton);
     
     // Add each track to the playlist
     playlistGroups[playlistName].forEach(track => {
