@@ -64,7 +64,7 @@
       <!-- Videosphere displaying the 360° video -->
       <a-videosphere id="videosphere" src="#video360" rotation="0 -90 0"></a-videosphere>
 
-      <a-entity id="cameraEntity" camera look-controls="reverseMouseDrag: true; touchEnabled: true;" position="0 1.6 0"></a-entity>
+      <a-entity id="cameraEntity" camera look-controls="reverseMouseDrag: true; touchEnabled: true;" camera-recenter position="0 1.6 0"></a-entity>
     </a-scene>
     
     <!-- Return to audio-only view button (positioned in top left corner) -->
@@ -76,7 +76,7 @@
   <!-- Shared player controls for both modes -->
   <div class="player-controls">
     <!-- Recenter camera button (only visible in XR mode) -->
-    <button id="recenterCameraBtn" class="recenter-camera-button" onclick="recenterCamera(); return false;">
+    <button id="recenterCameraBtn" class="recenter-camera-button">
       <i class="fas fa-compass"></i> Recenter View
     </button>
     
@@ -315,6 +315,44 @@
         }
       }
     });
+
+    // Global function to recenter the camera that's accessible from outside the component
+    function recenterCamera() {
+      console.log('Global recenterCamera function called');
+      
+      // Try to find the camera entity with the camera-recenter component
+      const cameraEl = document.querySelector('#cameraEntity');
+      
+      if (cameraEl) {
+        console.log('Found camera entity, attempting to recenter');
+        
+        // Try both methods to ensure one works
+        
+        // Method 1: Use the global function exposed by the component
+        if (typeof window.recenterCameraFromAFrame === 'function') {
+          console.log('Using recenterCameraFromAFrame method');
+          window.recenterCameraFromAFrame();
+        }
+        
+        // Method 2: Dispatch an event to the camera entity
+        console.log('Dispatching recenter event to camera');
+        cameraEl.dispatchEvent(new CustomEvent('recenter'));
+        
+        // Method 3: Try to directly call the component's method if available
+        if (cameraEl.components && cameraEl.components['camera-recenter']) {
+          console.log('Directly calling component recenter method');
+          cameraEl.components['camera-recenter'].recenter();
+        }
+        
+        return true;
+      } else {
+        console.error('Camera entity not found for recentering');
+        return false;
+      }
+    }
+
+    // Ensure the recenterCamera function is globally available
+    window.recenterCamera = recenterCamera;
   </script>
 
   <!-- Developer Tools (only visible in development) -->
@@ -389,6 +427,26 @@
       const startExperienceOverlay = document.getElementById('startExperienceOverlay');
       const startExperienceButton = document.getElementById('startExperienceButton');
       const permissionOverlay = document.getElementById('permissionOverlay');
+      
+      // Add event listeners for the recenter camera buttons
+      const recenterCameraBtn = document.getElementById('recenterCameraBtn');
+      const resetCameraBtn = document.getElementById('resetCameraBtn');
+      
+      if (recenterCameraBtn) {
+        recenterCameraBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('Recenter camera button clicked');
+          window.recenterCamera();
+        });
+      }
+      
+      if (resetCameraBtn) {
+        resetCameraBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('Reset camera button clicked');
+          window.recenterCamera();
+        });
+      }
       
       // Show dev tools button
       showDevTools.addEventListener('click', () => {

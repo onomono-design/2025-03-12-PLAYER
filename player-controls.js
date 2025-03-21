@@ -816,158 +816,267 @@ document.addEventListener('DOMContentLoaded', function () {
    * Enhanced switch to XR mode with perfect synchronization for Chapter 1
    */
   function switchToXRMode() {
-    // Save current time and play state
-    const currentTime = audio.currentTime;
-    const wasPlaying = !audio.paused;
-    const wasMuted = audio.muted; // Save the current mute state
+    console.log('Switching to XR mode');
     
-    // Show loading message
-    message.textContent = "Loading 360° experience...";
+    try {
+      // Check if the current track has an XR scene
+      const currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+      
+      if (!currentTrack) {
+        showMessage("No track loaded. Cannot switch to XR mode.");
+        return;
+      }
+      
+      // Use normalized fields
+      const videoSrc = currentTrack.videoSrc || currentTrack.XR_Scene;
+      
+      if (!videoSrc || videoSrc.trim() === '') {
+        showMessage("This track does not have a 360° scene.");
+        return;
+      }
+      
+      // Show loading message
+      showMessage("Preparing 360° experience...");
+      
+      // Check and preload the video before switching
+      preloadVideoBeforeSwitch(videoSrc);
+    } catch (error) {
+      console.error('Error switching to XR mode:', error);
+      showMessage("Error switching to XR mode. Please try again.");
+    }
+  }
+  
+  /**
+   * Preload video before switching to XR mode to ensure it works
+   * @param {string} videoSrc - The video source URL
+   */
+  function preloadVideoBeforeSwitch(videoSrc) {
+    // Store the current playback state
+    const wasPlaying = activeMediaElement && !activeMediaElement.paused;
+    
+    // Pause both media elements temporarily
+    if (audio) audio.pause();
+    if (video) video.pause();
+    
+    // Create a temporary video element to test loading
+    const tempVideo = document.createElement('video');
+    tempVideo.preload = 'auto';
+    tempVideo.muted = true;
+    tempVideo.crossOrigin = 'anonymous';
+    tempVideo.src = videoSrc;
+    
+    let preloadTimeout;
+    
+    // Set up success handler
+    tempVideo.addEventListener('canplaythrough', function() {
+      clearTimeout(preloadTimeout);
+      console.log('Video preloaded successfully, continuing to XR mode');
+      
+      // Ensure the video source is updated in the A-Frame scene
+      const videoSource = document.getElementById('videoSource');
+      if (videoSource && videoSource.src !== videoSrc) {
+        console.log(`Updating video source to: ${videoSrc}`);
+        videoSource.src = videoSrc;
+        
+        // Force the video element to reload
+        const video360 = document.getElementById('video360');
+        if (video360) {
+          video360.load();
+        }
+      }
+      
+      // Now we can safely switch to XR mode
+      completeXRModeSwitch(wasPlaying);
+      
+      // Clean up temporary element
+      tempVideo.src = '';
+      tempVideo.load();
+    }, { once: true });
+    
+    // Set up error handler
+    tempVideo.addEventListener('error', function(e) {
+      clearTimeout(preloadTimeout);
+      console.error('Error preloading video for XR mode:', e);
+      
+      // Try a different approach based on the URL
+      if (videoSrc.includes('DTLA-XR')) {
+        console.log('La Placita video detected, trying alternative loading approach');
+        
+        // Try a different protocol or add cache-busting
+        const altVideoSrc = videoSrc + '?cachebust=' + new Date().getTime();
+        console.log('Using alternative video URL:', altVideoSrc);
+        
+        // Update the video source in the A-Frame scene
+        const videoSource = document.getElementById('videoSource');
+        if (videoSource) {
+          videoSource.src = altVideoSrc;
+        }
+        
+        // Force the video element to reload
+        const video360 = document.getElementById('video360');
+        if (video360) {
+          video360.load();
+        }
+        
+        // Continue to XR mode anyway, the video might work
+        completeXRModeSwitch(wasPlaying);
+      } else {
+        // For other videos, show an error message
+        showMessage("Error loading 360° video. Please try again.");
+      }
+      
+      // Clean up temporary element
+      tempVideo.src = '';
+      tempVideo.load();
+    }, { once: true });
+    
+    // Start loading
+    tempVideo.load();
+    
+    // Set a timeout to avoid hanging if the video takes too long to load
+    preloadTimeout = setTimeout(function() {
+      console.warn('Video preload timeout, continuing to XR mode anyway');
+      
+      // Continue to XR mode anyway, the video might work
+      completeXRModeSwitch(wasPlaying);
+      
+      // Clean up temp element
+      tempVideo.src = '';
+      tempVideo.load();
+    }, 5000); // 5 second timeout
+  }
+  
+  /**
+   * Show a message with automatic timeout
+   * @param {string} text - Message text
+   * @param {number} [timeout=3000] - Time in ms before hiding the message
+   */
+  function showMessage(text, timeout = 3000) {
+    if (!message) return;
+    
+    message.textContent = text;
     message.style.display = "block";
     
-    // Pause both media elements to prevent any unexpected playback
-    audio.pause();
-    video.pause();
-    
-    // Hide audio player, show video player
-    audioPlayerContainer.classList.add('hidden');
-    videoPlayerContainer.classList.remove('hidden');
-    
-    // Update camera reset button visibility
-    resetCameraBtn.parentElement.classList.add('visible');
-    
-    // Set video time to match audio time for perfect sync
-    video.currentTime = currentTime;
-    
-    // Update active media element
-    activeMediaElement = video;
-    isXRMode = true;
-    
-    // Apply the same mute state to the video
-    video.muted = wasMuted;
-    
-    // Always ensure audio is muted in XR mode to prevent double sound
-    audio.muted = true;
-    
-    // Update the mute button to reflect the current state
-    updateMuteButton();
-    
-    // Sync play state
-    if (wasPlaying) {
-      // Only play video if audio was playing before the switch
-      console.log("Audio was playing, starting video playback");
-      video.play().then(() => {
+    // Hide message after timeout
+    setTimeout(() => {
+      if (message.textContent === text) {
         message.style.display = "none";
-        updatePlayPauseButton();
-        // Double-check muting after playback starts
-        enforceProperMuting();
-      }).catch(error => {
-        console.error('Error playing video:', error);
-        message.textContent = "Error loading 360° experience. Try again.";
-      });
-    } else {
-      // Both should remain paused
-      console.log("Audio was paused, keeping video paused");
-      message.style.display = "none";
-      updatePlayPauseButton();
-    }
-    
-    // Update UI to reflect current mode
-    updateUIForCurrentMode();
-    
-    // Show camera reset button
-    if (resetCameraBtn && resetCameraBtn.parentElement) {
-        resetCameraBtn.parentElement.classList.add('visible');
-    }
-    
-    // Show recenter camera button
-    if (recenterCameraBtn) {
-        recenterCameraBtn.classList.add('visible');
-    }
+      }
+    }, timeout);
   }
   
   /**
    * Enhanced switch to audio mode with perfect synchronization for Chapter 1
    */
   function switchToAudioMode() {
-    // Save current time and play state
-    const currentTime = video.currentTime;
-    const wasPlaying = !video.paused;
-    const wasMuted = video.muted; // Save the current mute state
+    console.log('Switching to audio-only mode');
     
-    // Pause both media elements to prevent any unexpected playback
-    video.pause();
-    audio.pause();
-    
-    // Hide video player, show audio player
-    videoPlayerContainer.classList.add('hidden');
-    audioPlayerContainer.classList.remove('hidden');
-    
-    // Hide camera reset button in audio mode
-    resetCameraBtn.parentElement.classList.remove('visible');
-    
-    // Set audio time to match video time for perfect sync
-    audio.currentTime = currentTime;
-    
-    // Update active media element
-    activeMediaElement = audio;
-    isXRMode = false;
-    
-    // Apply the same mute state to the audio
-    audio.muted = wasMuted;
-    
-    // Always ensure video is muted in audio mode to prevent double sound
-    video.muted = true;
-    
-    // Update the mute button to reflect the current state
-    updateMuteButton();
-    
-    // Reset scrubber state to ensure it's not stuck
-    isScrubbing = false;
-    
-    // Force update the scrubber and time display
-    updateTimeDisplay();
-    
-    // Sync play state
-    if (wasPlaying) {
-      // Only play audio if video was playing before the switch
-      console.log("Video was playing, starting audio playback");
-      audio.play().then(() => {
-        updatePlayPauseButton();
-        // Double-check muting after playback starts
-        enforceProperMuting();
-        
-        // Force another update of the scrubber after playback starts
-        setTimeout(() => {
-          updateTimeDisplay();
-          // Ensure the scrubber is properly updated
-          scrubber.value = audio.currentTime;
-          const progressPercentage = (audio.currentTime / (audio.duration || 1)) * 100;
-          updateProgressBar(progressPercentage);
-        }, 100);
-      }).catch(error => {
-        console.error('Error playing audio:', error);
-        message.textContent = "Error playing audio. Try again.";
-        message.style.display = "block";
-        setTimeout(() => message.style.display = "none", 3000);
-      });
-    } else {
-      // Both should remain paused
-      console.log("Video was paused, keeping audio paused");
-      updatePlayPauseButton();
-    }
-    
-    // Update UI to reflect current mode
-    updateUIForCurrentMode();
-    
-    // Hide camera reset button
-    if (resetCameraBtn && resetCameraBtn.parentElement) {
+    try {
+      // Save current time and play state
+      const currentTime = video ? video.currentTime : 0;
+      const wasPlaying = video && !video.paused;
+      const wasMuted = video ? video.muted : false;
+      
+      // Show loading message briefly
+      showMessage("Switching to audio mode...");
+      
+      // Pause both media elements to prevent any unexpected playback
+      if (video) video.pause();
+      if (audio) audio.pause();
+      
+      // Hide video player, show audio player
+      if (videoPlayerContainer) {
+        videoPlayerContainer.classList.add('hidden');
+      }
+      
+      if (audioPlayerContainer) {
+        audioPlayerContainer.classList.remove('hidden');
+      }
+      
+      // Hide camera reset button in audio mode
+      if (resetCameraBtn && resetCameraBtn.parentElement) {
         resetCameraBtn.parentElement.classList.remove('visible');
-    }
-    
-    // Hide recenter camera button
-    if (recenterCameraBtn) {
+      }
+      
+      // Set audio time to match video time for perfect sync
+      if (audio && !isNaN(currentTime)) {
+        audio.currentTime = currentTime;
+      }
+      
+      // Update active media element
+      activeMediaElement = audio;
+      isXRMode = false;
+      
+      // Apply the same mute state to the audio
+      if (audio) {
+        audio.muted = wasMuted;
+      }
+      
+      // Always ensure video is muted in audio mode to prevent double sound
+      if (video) {
+        video.muted = true;
+      }
+      
+      // Update the mute button to reflect the current state
+      updateMuteButton();
+      
+      // Reset scrubber state to ensure it's not stuck
+      isScrubbing = false;
+      
+      // Force update the scrubber and time display
+      updateTimeDisplay();
+      
+      // Sync play state
+      if (wasPlaying) {
+        // Only play audio if video was playing before the switch
+        console.log("Video was playing, starting audio playback");
+        
+        if (audio) {
+          audio.play().then(() => {
+            message.style.display = "none";
+            updatePlayPauseButton();
+            // Double-check muting after playback starts
+            enforceProperMuting();
+            
+            // Force another update of the scrubber after playback starts
+            setTimeout(() => {
+              updateTimeDisplay();
+              // Ensure the scrubber is properly updated
+              if (scrubber && audio) {
+                scrubber.value = audio.currentTime;
+                const progressPercentage = (audio.currentTime / (audio.duration || 1)) * 100;
+                updateProgressBar(progressPercentage);
+              }
+            }, 100);
+          }).catch(error => {
+            console.error('Error playing audio:', error);
+            showMessage("Error playing audio. Try again.");
+          });
+        }
+      } else {
+        // Both should remain paused
+        console.log("Video was paused, keeping audio paused");
+        message.style.display = "none";
+        updatePlayPauseButton();
+      }
+      
+      // Update UI to reflect current mode
+      if (typeof updateUIForCurrentMode === 'function') {
+        updateUIForCurrentMode();
+      }
+      
+      // Hide camera reset button
+      if (resetCameraBtn && resetCameraBtn.parentElement) {
+        resetCameraBtn.parentElement.classList.remove('visible');
+      }
+      
+      // Hide recenter camera button
+      if (recenterCameraBtn) {
         recenterCameraBtn.classList.remove('visible');
+      }
+    } catch (error) {
+      console.error('Error switching to audio-only mode:', error);
+      showMessage("Error switching to audio mode. Please try again.");
     }
   }
   
@@ -1065,19 +1174,36 @@ document.addEventListener('DOMContentLoaded', function () {
   
   /**
    * Preload both audio and video to ensure they're ready when needed
-   * Enhanced for Chapter 1 to preload both versions
+   * Enhanced to dynamically load the current track's media
    */
   function preloadMedia() {
     message.textContent = "Preloading media...";
     message.style.display = "block";
     
-    // For Chapter 1, we want to preload both the audio-only and 360° versions
-    const audioUrl = "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3";
-    const videoUrl = "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4";
+    // Get current track information
+    const currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+    
+    // If no track is selected, try to preload the first track from the playlist
+    const trackToLoad = currentTrack || (playlist && playlist.length > 0 ? playlist[0] : null);
+    
+    if (!trackToLoad) {
+      console.log('No track available to preload');
+      message.textContent = "Error loading media. Please reload the page.";
+      return;
+    }
+    
+    console.log(`Preloading track: ${trackToLoad.title}`);
+    
+    // Get media URLs from the track
+    const audioUrl = trackToLoad.audioSrc || trackToLoad.audio_url;
+    const videoUrl = trackToLoad.videoSrc || trackToLoad.XR_Scene;
+    
+    console.log(`Preloading audio: ${audioUrl}`);
+    console.log(`Preloading video: ${videoUrl ? videoUrl : 'No video available'}`);
     
     // Set up counters to track when both files are loaded
     let audioLoaded = false;
-    let videoLoaded = false;
+    let videoLoaded = !videoUrl; // If no video, consider it loaded
     let audioAttempts = 0;
     let videoAttempts = 0;
     const maxAttempts = 3;
@@ -1086,14 +1212,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const checkBothLoaded = () => {
       if (audioLoaded && videoLoaded) {
         isAudioPreloaded = true;
-        isVideoPreloaded = true;
+        isVideoPreloaded = videoUrl ? true : false;
         message.textContent = "Media ready. Click play to start.";
         setTimeout(() => {
           if (message.textContent === "Media ready. Click play to start.") {
             message.style.display = "none";
           }
         }, 3000);
-        console.log("Both audio and video preloaded successfully");
+        console.log("Media preloaded successfully");
       }
     };
     
@@ -1136,6 +1262,12 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Function to retry loading video
     const retryVideoLoad = () => {
+      if (!videoUrl) {
+        videoLoaded = true;
+        checkBothLoaded();
+        return;
+      }
+      
       if (videoAttempts < maxAttempts) {
         videoAttempts++;
         console.log(`Retrying video preload (attempt ${videoAttempts}/${maxAttempts})...`);
@@ -1173,43 +1305,54 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     };
     
-    // Preload audio-only version
-    const tempAudio = new Audio();
-    tempAudio.preload = 'auto';
-    tempAudio.src = audioUrl;
+    // Preload audio
+    if (audioUrl) {
+      const tempAudio = new Audio();
+      tempAudio.preload = 'auto';
+      tempAudio.src = audioUrl;
+      
+      tempAudio.addEventListener('canplaythrough', function onAudioReady() {
+        audioLoaded = true;
+        tempAudio.removeEventListener('canplaythrough', onAudioReady);
+        checkBothLoaded();
+      });
+      
+      tempAudio.addEventListener('error', function(e) {
+        console.error('Audio preload error:', e);
+        retryAudioLoad();
+      });
+      
+      tempAudio.load();
+    } else {
+      console.warn('No audio URL available for preloading');
+      audioLoaded = true; // Consider it loaded if not available
+    }
     
-    tempAudio.addEventListener('canplaythrough', function onAudioReady() {
-      audioLoaded = true;
-      tempAudio.removeEventListener('canplaythrough', onAudioReady);
+    // Preload video if available
+    if (videoUrl) {
+      const tempVideo = document.createElement('video');
+      tempVideo.preload = 'auto';
+      tempVideo.muted = true;
+      tempVideo.crossOrigin = 'anonymous';
+      tempVideo.src = videoUrl;
+      
+      tempVideo.addEventListener('canplaythrough', function onVideoReady() {
+        videoLoaded = true;
+        tempVideo.removeEventListener('canplaythrough', onVideoReady);
+        checkBothLoaded();
+      });
+      
+      tempVideo.addEventListener('error', function(e) {
+        console.error('Video preload error:', e);
+        retryVideoLoad();
+      });
+      
+      tempVideo.load();
+    } else {
+      console.log('No video URL available for preloading');
+      videoLoaded = true; // Consider it loaded if not available
       checkBothLoaded();
-    });
-    
-    tempAudio.addEventListener('error', function(e) {
-      console.error('Audio preload error:', e);
-      retryAudioLoad();
-    });
-    
-    // Preload 360° video version
-    const tempVideo = document.createElement('video');
-    tempVideo.preload = 'auto';
-    tempVideo.muted = true;
-    tempVideo.crossOrigin = 'anonymous';
-    tempVideo.src = videoUrl;
-    
-    tempVideo.addEventListener('canplaythrough', function onVideoReady() {
-      videoLoaded = true;
-      tempVideo.removeEventListener('canplaythrough', onVideoReady);
-      checkBothLoaded();
-    });
-    
-    tempVideo.addEventListener('error', function(e) {
-      console.error('Video preload error:', e);
-      retryVideoLoad();
-    });
-    
-    // Start loading both files
-    tempAudio.load();
-    tempVideo.load();
+    }
   }
   
   /**
@@ -2479,8 +2622,8 @@ document.addEventListener('DOMContentLoaded', function () {
       id: track.id,
       title: track.title,
       playlistName: track.playlistName,
-      audioSrc: track.audioSrc,
-      videoSrc: track.videoSrc,
+      audioSrc: track.audioSrc || track.audio_url,
+      videoSrc: track.videoSrc || track.XR_Scene,
       isAR: track.isAR
     }, null, 2));
     
@@ -2530,17 +2673,25 @@ document.addEventListener('DOMContentLoaded', function () {
     audio.loop = false;
     video.loop = false;
     
+    // Normalize track data - handle both field naming conventions
+    const normalizedTrack = {
+      ...track,
+      audioSrc: track.audioSrc || track.audio_url,
+      videoSrc: track.videoSrc || track.XR_Scene,
+      artworkUrl: track.artworkUrl || track.artwork_url
+    };
+    
     // Check if this track has an XR scene
-    const hasXRScene = track.videoSrc && track.videoSrc.trim() !== '';
+    const hasXRScene = normalizedTrack.videoSrc && normalizedTrack.videoSrc.trim() !== '';
     
     // Update audio source
-    if (track.audioSrc) {
-      console.log(`Setting audio source to: ${track.audioSrc}`);
-      audio.src = track.audioSrc;
+    if (normalizedTrack.audioSrc) {
+      console.log(`Setting audio source to: ${normalizedTrack.audioSrc}`);
+      audio.src = normalizedTrack.audioSrc;
       
       // Add event listener to check the actual duration once loaded
       const checkAudioDuration = () => {
-        console.log(`Audio file loaded: ${track.audioSrc}`);
+        console.log(`Audio file loaded: ${normalizedTrack.audioSrc}`);
         console.log(`Actual audio duration: ${audio.duration} seconds (${formatTime(Math.floor(audio.duration))})`);
         
         // Ensure the duration is properly set for this track
@@ -2548,151 +2699,138 @@ document.addEventListener('DOMContentLoaded', function () {
           // Update the scrubber max value based on the actual duration
           scrubber.max = Math.floor(audio.duration);
           durationDisplay.textContent = formatTime(Math.floor(audio.duration));
-        } else {
-          // If duration is not available, use the track's duration from the playlist
-          const durationParts = track.duration.split(':');
-          if (durationParts.length === 2) {
-            const minutes = parseInt(durationParts[0], 10);
-            const seconds = parseInt(durationParts[1], 10);
-            if (!isNaN(minutes) && !isNaN(seconds)) {
-              const fallbackDuration = (minutes * 60) + seconds;
-              scrubber.max = fallbackDuration;
-              durationDisplay.textContent = formatTime(fallbackDuration);
-            }
-          }
         }
-        
-        audio.removeEventListener('loadedmetadata', checkAudioDuration);
       };
       
-      audio.addEventListener('loadedmetadata', checkAudioDuration);
-      audio.load();
+      // Use the loadedmetadata event for more reliable duration info
+      audio.addEventListener('loadedmetadata', checkAudioDuration, { once: true });
+      
+      // Fallback to the loadeddata event if loadedmetadata doesn't fire
+      audio.addEventListener('loadeddata', checkAudioDuration, { once: true });
+    } else {
+      console.error('Track has no audio source');
+      message.textContent = "Error: No audio source found for this track.";
+      return;
     }
     
-    // Update video source if available
+    // Update video source if applicable
     if (hasXRScene) {
-      console.log(`Track has XR scene: ${track.videoSrc}`);
-      
       // Set the video source
-      const videoSource = video.querySelector('source');
+      const videoSource = document.getElementById('videoSource');
       if (videoSource) {
-        videoSource.src = track.videoSrc;
-        console.log(`Set video source to: ${track.videoSrc}`);
+        console.log(`Setting video source to: ${normalizedTrack.videoSrc}`);
+        videoSource.src = normalizedTrack.videoSrc;
+      }
+      
+      // Force the video element to reload with the new source
+      const video360 = document.getElementById('video360');
+      if (video360) {
+        video360.load();
+      }
+    }
+    
+    // Update album artwork
+    if (normalizedTrack.artworkUrl && albumArt) {
+      console.log(`Setting album artwork to: ${normalizedTrack.artworkUrl}`);
+      // Use the web-friendly version of the image URL
+      let artworkUrl = getWebFriendlyImageUrl(normalizedTrack.artworkUrl);
+      
+      console.log(`Using artwork URL: ${artworkUrl}`);
+      albumArt.src = artworkUrl;
+      
+      // Handle image loading errors
+      albumArt.onerror = function() {
+        console.error(`Failed to load album artwork: ${artworkUrl}`);
+        // Set a default/fallback image
+        albumArt.src = 'https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/013+Block-CalMigration-logo-Off-White.png';
+      };
+    }
+    
+    // Update UI elements with track info
+    if (sceneName) {
+      sceneName.textContent = track.title;
+    }
+    
+    if (playlistName) {
+      playlistName.textContent = track.playlistName;
+    }
+    
+    if (audioTitle) {
+      audioTitle.textContent = track.title;
+    }
+    
+    if (audioArtist) {
+      audioArtist.textContent = track.playlistName;
+    }
+    
+    // Enable or disable XR button based on track capability
+    if (viewXRBtn) {
+      if (hasXRScene) {
+        viewXRBtn.style.display = 'block';
       } else {
-        console.error('No video source element found');
-      }
-      
-      // Force the video element to load the new source
-      video.load();
-      
-      // Make the "View in XR" button visible for tracks with XR scenes
-      if (viewXRBtn) {
-        const shouldShowXRButton = track.isAR === true;
-        console.log(`Setting View in XR button visibility: ${shouldShowXRButton ? 'visible' : 'hidden'}`);
-        viewXRBtn.style.display = shouldShowXRButton ? 'flex' : 'none';
-      }
-      
-      // Set up synchronization for tracks with XR scenes
-      // But only if we haven't already set it up
-      if (!window.mediaSyncSetup) {
-        console.log('Setting up media synchronization');
-        setupMediaSync();
-        window.mediaSyncSetup = true;
-      }
-      
-      // If we're already in XR mode, ensure the video is properly loaded
-      if (isXRMode) {
-        console.log('Already in XR mode, ensuring video is properly loaded');
-        // Double-check that the video element has the correct source
-        const currentVideoSrc = video.querySelector('source')?.src;
-        if (currentVideoSrc !== track.videoSrc) {
-          console.warn(`Video source mismatch: ${currentVideoSrc} vs ${track.videoSrc}`);
-          video.querySelector('source').src = track.videoSrc;
-          video.load();
-        }
-      }
-    } else {
-      console.log('Track does not have an XR scene');
-      // Hide the "View in XR" button for tracks without XR scenes
-      if (viewXRBtn) {
         viewXRBtn.style.display = 'none';
       }
+    }
+    
+    // Preload the media
+    preloadCurrentTrackMedia();
+    
+    // Load the media
+    audio.load();
+    
+    // Hide the loading message once loaded
+    audio.addEventListener('canplaythrough', function onCanPlayThrough() {
+      message.style.display = "none";
+      audio.removeEventListener('canplaythrough', onCanPlayThrough);
       
-      // If we're in XR mode but the new track doesn't have an XR scene, switch to audio mode
-      if (isXRMode) {
-        console.log('Switching to audio mode because track has no XR scene');
-        switchToAudioMode();
+      // Resume playback if it was playing before
+      if (wasPlaying) {
+        console.log('Resuming playback after track load');
+        playMedia();
       }
-    }
+    }, { once: true });
     
-    // Reset playback position
-    audio.currentTime = 0;
-    video.currentTime = 0;
-    
-    // Ensure proper muting based on current mode
-    enforceProperMuting();
-    
-    // Update scene and playlist info - make sure to use the track's title and playlist name
-    console.log(`Updating UI with track info: "${track.title}" | "${track.playlistName}"`);
-    updateVideoInfo(track.title, track.playlistName);
-    
-    // Update audio player UI with track information
-    console.log(`Updating audio player UI with artwork URL: ${track.artworkUrl}`);
-    updateAudioPlayerUI(track.title, track.playlistName, track.artworkUrl);
-    
-    // Always update the play/pause button to reflect the current state
-    // This ensures the UI is consistent even if playback hasn't started yet
-    if (wasPlaying) {
-      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    } else {
-      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-    }
-    
-    // Function to play media when it's ready
-    const playWhenReady = () => {
-      // Double-check mute states before playing
-      enforceProperMuting();
+    // Handle loading errors
+    audio.addEventListener('error', function onError(e) {
+      console.error('Error loading audio:', e);
+      message.textContent = "Error loading audio. Please try again.";
       
-      console.log('Media ready to play, starting playback');
-      activeMediaElement.play()
-        .then(() => {
-          message.style.display = "none";
-          updatePlayPauseButton();
-          // Double-check muting after playback starts
-          enforceProperMuting();
-        })
-        .catch(error => {
-          console.error('Error playing media:', error);
-          message.textContent = "Error playing media. Please try again.";
-          message.style.display = "block";
-          // Reset play button if playback fails
-          playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-        });
-      
-      // Remove event listeners
-      video.removeEventListener('canplay', playWhenReady);
-      audio.removeEventListener('canplay', playWhenReady);
-    };
+      // Try to recover with a different file format or retry
+      retryLoadingAudio(normalizedTrack.audioSrc);
+    }, { once: true });
+  }
+
+  /**
+   * Retry loading audio with different approaches
+   * @param {string} audioUrl - The original audio URL
+   */
+  function retryLoadingAudio(audioUrl) {
+    console.log(`Retrying audio load for: ${audioUrl}`);
     
-    // Set up event listeners for media readiness
-    if (wasPlaying) {
-      // If we were playing before, auto-play the new track when ready
-      console.log('Setting up auto-play for new track');
-      video.addEventListener('canplay', playWhenReady);
-      audio.addEventListener('canplay', playWhenReady);
-      
-      // Also set a timeout as a fallback in case the canplay event doesn't fire
-      setTimeout(() => {
-        if (activeMediaElement.paused && wasPlaying) {
-          console.log('Fallback: Starting playback after timeout');
-          togglePlayPause();
-        }
-      }, 1500);
-    } else {
-      // Just hide the message after a delay if not playing
-      setTimeout(() => {
-        message.style.display = "none";
-      }, 2000);
+    // Try with a cache-busting parameter
+    const cacheBustUrl = audioUrl + '?retry=' + new Date().getTime();
+    audio.src = cacheBustUrl;
+    audio.load();
+    
+    // Set a timeout to clear the error message if it loads successfully
+    audio.addEventListener('canplaythrough', function onRetrySuccess() {
+      message.style.display = "none";
+      console.log('Audio retry successful');
+    }, { once: true });
+    
+    // If still fails, try a different approach or show persistent error
+    audio.addEventListener('error', function onRetryError() {
+      console.error('Audio retry failed');
+      message.textContent = "Could not load audio. Please try a different track.";
+    }, { once: true });
+  }
+
+  /**
+   * Preload media for the current track
+   */
+  function preloadCurrentTrackMedia() {
+    if (currentTrackIndex >= 0 && currentTrackIndex < playlist.length) {
+      preloadMedia();
     }
   }
 
@@ -3339,6 +3477,148 @@ document.addEventListener('DOMContentLoaded', function () {
       videoHeight: video.videoHeight,
       readyState: video.readyState
     });
+  });
+
+  /**
+   * Get a web-friendly version of an image URL
+   * Converts TIF/TIFF files to JPG or PNG when possible
+   * @param {string} url - The original image URL
+   * @returns {string} - A web-friendly version of the URL
+   */
+  function getWebFriendlyImageUrl(url) {
+    if (!url) return url;
+    
+    // Check if the URL ends with a problematic extension
+    if (url.endsWith('.tif') || url.endsWith('.tiff')) {
+      console.log(`Converting TIF image URL to web-friendly format: ${url}`);
+      
+      // Try to find a JPG or PNG version by changing the extension
+      // First check if a JPG version exists with the same base name
+      const jpgUrl = url.replace(/\.tiff?$/i, '.jpg');
+      
+      // We'll use the JPG version as the primary fallback
+      console.log(`Using JPG fallback: ${jpgUrl}`);
+      return jpgUrl;
+    }
+    
+    return url;
+  }
+
+  /**
+   * Complete the switch to XR mode after video preloading
+   * @param {boolean} wasPlaying - Whether media was playing before switch
+   */
+  function completeXRModeSwitch(wasPlaying) {
+    console.log('Completing switch to XR mode, wasPlaying:', wasPlaying);
+    
+    // Save current time
+    const currentTime = audio ? audio.currentTime : 0;
+    
+    // Hide audio player, show video player
+    if (audioPlayerContainer) {
+      audioPlayerContainer.classList.add('hidden');
+    }
+    
+    if (videoPlayerContainer) {
+      videoPlayerContainer.classList.remove('hidden');
+    }
+    
+    // Ensure exit XR button is visible and properly positioned
+    if (exitXRBtn) {
+      // Reset any previous styling that might be hiding it
+      exitXRBtn.style.display = 'flex';
+      exitXRBtn.style.opacity = '1';
+      exitXRBtn.style.pointerEvents = 'auto';
+      exitXRBtn.style.zIndex = '100'; // Ensure it's above the video sphere
+      
+      console.log('Exit XR button display style set to:', exitXRBtn.style.display);
+    } else {
+      console.warn('Exit XR button element not found');
+    }
+    
+    // Update camera reset button visibility
+    if (resetCameraBtn && resetCameraBtn.parentElement) {
+      resetCameraBtn.parentElement.classList.add('visible');
+    }
+    
+    // Set video time to match audio time for perfect sync
+    if (video) video.currentTime = currentTime;
+    
+    // Update active media element
+    activeMediaElement = video;
+    isXRMode = true;
+    
+    // Always ensure audio is muted in XR mode to prevent double sound
+    if (audio) audio.muted = true;
+    if (video) video.muted = false;
+    
+    // Update the mute button to reflect the current state
+    updateMuteButton();
+    
+    // Sync play state
+    if (wasPlaying) {
+      // Only play video if audio was playing before the switch
+      console.log("Media was playing, starting video playback");
+      
+      if (video) {
+        video.play().then(() => {
+          message.style.display = "none";
+          updatePlayPauseButton();
+          // Double-check muting after playback starts
+          enforceProperMuting();
+        }).catch(error => {
+          console.error('Error playing video:', error);
+          showMessage("Error playing 360° video. Try again.");
+        });
+      }
+    } else {
+      // Both should remain paused
+      console.log("Media was paused, keeping video paused");
+      message.style.display = "none";
+      updatePlayPauseButton();
+    }
+    
+    // Update UI to reflect current mode
+    if (typeof updateUIForCurrentMode === 'function') {
+      updateUIForCurrentMode();
+    }
+    
+    // Show recenter camera button
+    if (recenterCameraBtn) {
+      recenterCameraBtn.classList.add('visible');
+    }
+    
+    // Reset the camera view
+    setTimeout(() => {
+      if (typeof recenterCamera === 'function') {
+        recenterCamera();
+      } else if (typeof window.recenterCamera === 'function') {
+        window.recenterCamera();
+      }
+    }, 1000);
+  }
+
+  // Initialize event listeners
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired, setting up additional button handlers');
+    
+    // Make sure the XR view button works
+    const viewXRBtn = document.getElementById('viewXRBtn');
+    if (viewXRBtn) {
+      viewXRBtn.addEventListener('click', function() {
+        console.log('View XR button clicked');
+        switchToXRMode();
+      });
+    }
+    
+    // Make sure the exit XR button works
+    const exitXRBtn = document.getElementById('exitXRBtn');
+    if (exitXRBtn) {
+      exitXRBtn.addEventListener('click', function() {
+        console.log('Exit XR button clicked');
+        switchToAudioMode();
+      });
+    }
   });
 }); 
 

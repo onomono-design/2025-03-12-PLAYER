@@ -131,6 +131,9 @@ body {
   gap: 8px;
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* Ensure the button is always visible */
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .exit-xr-button:hover {
@@ -155,6 +158,13 @@ body.mobile-device .exit-xr-button {
 .hidden {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Exception for exit XR button - it should never be hidden by the .hidden class */
+.video-player-container:not(.hidden) .exit-xr-button {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  display: flex !important;
 }
 
 /* Mobile adjustments for audio player */
@@ -1646,4 +1656,14 @@ body.ios-device .scrubber-progress {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* A-Frame scene should have a lower z-index than the exit button */
+a-scene {
+  z-index: 10;
+}
+
+/* The exit button should be above the A-Frame scene */
+.exit-xr-button {
+  z-index: 100 !important;
 } 
