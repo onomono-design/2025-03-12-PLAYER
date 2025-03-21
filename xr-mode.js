@@ -168,16 +168,6 @@ export function completeXRModeSwitch(wasPlaying) {
       }
     }
     
-    // Debug log to help diagnose issues
-    console.log('XR mode video source:', videoSrc);
-    console.log('Current track:', currentTrack);
-    
-    // Double check that we have a video source
-    if (!videoSrc || videoSrc.trim() === '') {
-      showMessage("This track does not have a 360° scene. Unable to switch to XR mode.", 3000);
-      return;
-    }
-    
     // Update the video source in the DOM
     const videoSource = document.getElementById('videoSource');
     if (videoSource && videoSrc) {
@@ -188,16 +178,8 @@ export function completeXRModeSwitch(wasPlaying) {
       const video360 = document.getElementById('video360');
       if (video360) {
         video360.load();
-        
-        // Ensure this video has crossorigin attribute
-        if (!video360.hasAttribute('crossorigin')) {
-          video360.setAttribute('crossorigin', 'anonymous');
-        }
       }
     }
-    
-    // Make this function available globally for the player-controls.js
-    window.completeXRModeSwitch = completeXRModeSwitch;
     
     // Set XR mode flag
     PlayerState.setXRMode(true);

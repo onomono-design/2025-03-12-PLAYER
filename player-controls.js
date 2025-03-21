@@ -828,50 +828,18 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       
       // Use normalized fields
-      let videoSrc = currentTrack.videoSrc || currentTrack.XR_Scene;
+      const videoSrc = currentTrack.videoSrc || currentTrack.XR_Scene;
       
-      // Additional check for data in the rawTrackData if available
-      if ((!videoSrc || videoSrc.trim() === '') && window.PlayerState && window.PlayerState.rawTrackData) {
-        const rawTrack = window.PlayerState.rawTrackData[currentTrackIndex];
-        if (rawTrack && rawTrack.XR_Scene) {
-          console.log('Found XR_Scene in raw track data:', rawTrack.XR_Scene);
-          videoSrc = rawTrack.XR_Scene;
-        }
-      }
-      
-      // Final check for any XR source
       if (!videoSrc || videoSrc.trim() === '') {
         showMessage("This track does not have a 360° scene.");
         return;
       }
       
-      console.log('Loading XR scene from video source:', videoSrc);
-      
       // Show loading message
       showMessage("Preparing 360° experience...");
       
-      // Update video source and preload before switching
-      const videoSource = document.getElementById('videoSource');
-      if (videoSource) {
-        videoSource.src = videoSrc;
-        
-        // Force the video element to reload with the new source
-        const video360 = document.getElementById('video360');
-        if (video360) {
-          video360.load();
-          
-          // Ensure this video has crossorigin attribute
-          if (!video360.hasAttribute('crossorigin')) {
-            video360.setAttribute('crossorigin', 'anonymous');
-          }
-        }
-      }
-      
-      // Continue with XR mode switch after a short delay
-      setTimeout(() => {
-        const wasPlaying = audioElement && !audioElement.paused;
-        window.completeXRModeSwitch(wasPlaying);
-      }, 500);
+      // Check and preload the video before switching
+      preloadVideoBeforeSwitch(videoSrc);
     } catch (error) {
       console.error('Error switching to XR mode:', error);
       showMessage("Error switching to XR mode. Please try again.");

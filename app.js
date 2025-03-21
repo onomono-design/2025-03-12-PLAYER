@@ -6,7 +6,7 @@
 import { PlayerState } from './shared-state.js';
 import { initializeCore, setupMediaElements } from './player-core.js';
 import { initializeUI, setupUIListeners } from './player-ui.js';
-import { initializePlaylist, loadPlaylistData, loadTrack } from './playlist-manager.js';
+import { initializePlaylist, loadPlaylistData } from './playlist-manager.js';
 import { setupXRMode } from './xr-mode.js';
 import { ErrorLogger } from './error-logger.js';
 import { setupMediaPreloader } from './media-preloader.js';
@@ -80,12 +80,7 @@ function initializeApp() {
         setupGlobalEventListeners();
         
         // Load playlist data
-        loadPlaylistData().then(() => {
-          // Set Chinatown Chapter 1 as the default content to load initially
-          initializeDefaultContent();
-        }).catch(error => {
-          console.error('Error loading playlist data:', error);
-        });
+        loadPlaylistData();
         
         console.log('Application initialization complete');
       })
@@ -383,39 +378,6 @@ function handleWindowResize() {
     console.log('Window resized, updating layout');
     updateAllLayouts();
   }, 100); // Debounce resize events by 100ms
-}
-
-/**
- * Initialize default content - load Chinatown Chapter 1
- */
-function initializeDefaultContent() {
-  try {
-    // Find Chinatown (Look Up) playlist's first track
-    if (PlayerState.playlistGroups && PlayerState.playlistGroups['Look Up']) {
-      const chinatownTracks = PlayerState.playlistGroups['Look Up'];
-      if (chinatownTracks && chinatownTracks.length > 0) {
-        // Find the index of Chapter 1 in the flat playlist
-        let chapter1Index = PlayerState.playlist.findIndex(track => 
-          track.playlistName === 'Look Up' && 
-          (track.chapter === 1 || track.title.includes('Chapter 1'))
-        );
-        
-        if (chapter1Index === -1) {
-          // If not found, just use the first track
-          chapter1Index = PlayerState.playlist.findIndex(track => 
-            track.playlistName === 'Look Up'
-          );
-        }
-        
-        if (chapter1Index !== -1) {
-          console.log('Loading Chinatown Chapter 1 content');
-          loadTrack(chapter1Index, false);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error initializing default content:', error);
-  }
 }
 
 // Export public API

@@ -81,95 +81,87 @@ function setupPlaylistUI() {
 /**
  * Load playlist data from JSON file
  * @param {string} url - URL to the playlist JSON file (optional)
- * @returns {Promise} - Promise that resolves when the playlist data is loaded
  */
 export function loadPlaylistData(url = DEFAULT_PLAYLIST_URL) {
-  // Return a promise that resolves when playlist loading is complete
-  return new Promise((resolve, reject) => {
-    if (isPlaylistLoading) {
-      console.log('Playlist is already loading, ignoring request');
-      reject(new Error('Playlist is already loading'));
-      return;
+  if (isPlaylistLoading) {
+    console.log('Playlist is already loading, ignoring request');
+    return;
+  }
+  
+  // Check if we have a valid cached playlist
+  const now = Date.now();
+  if (localPlaylistCache && (now - playlistLastLoaded) < PLAYLIST_CACHE_TTL) {
+    console.log('Using cached playlist data');
+    processPlaylistData(localPlaylistCache);
+    return;
+  }
+  
+  isPlaylistLoading = true;
+  console.log(`Loading playlist data from ${url}...`);
+  
+  // Show loading message
+  if (PlayerState.elements.message) {
+    PlayerState.elements.message.textContent = "Loading playlist...";
+    PlayerState.elements.message.style.display = "block";
+  }
+  
+  // Add cache-busting only if it's been more than a day since last load
+  const fetchUrl = (now - playlistLastLoaded) > PLAYLIST_CACHE_TTL ? 
+    `${url}?t=${now}` : url;
+  
+  fetch(fetchUrl, {
+    headers: {
+      'Cache-Control': 'max-age=3600'  // Tell browser to cache for 1 hour
     }
-    
-    // Check if we have a valid cached playlist
-    const now = Date.now();
-    if (localPlaylistCache && (now - playlistLastLoaded) < PLAYLIST_CACHE_TTL) {
-      console.log('Using cached playlist data');
-      processPlaylistData(localPlaylistCache);
-      resolve(localPlaylistCache);
-      return;
-    }
-    
-    isPlaylistLoading = true;
-    console.log(`Loading playlist data from ${url}...`);
-    
-    // Show loading message
-    if (PlayerState.elements.message) {
-      PlayerState.elements.message.textContent = "Loading playlist...";
-      PlayerState.elements.message.style.display = "block";
-    }
-    
-    // Add cache-busting only if it's been more than a day since last load
-    const fetchUrl = (now - playlistLastLoaded) > PLAYLIST_CACHE_TTL ? 
-      `${url}?t=${now}` : url;
-    
-    fetch(fetchUrl, {
-      headers: {
-        'Cache-Control': 'max-age=3600'  // Tell browser to cache for 1 hour
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
+      return response.json();
     })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Playlist data loaded successfully');
-        
-        // Cache the playlist data
-        localPlaylistCache = data;
-        playlistLastLoaded = now;
-        
-        // Process the playlist data
-        processPlaylistData(data);
-        
-        // Hide loading message
-        if (PlayerState.elements.message) {
-          PlayerState.elements.message.textContent = "Playlist loaded successfully";
-          setTimeout(() => {
-            if (PlayerState.elements.message && 
-                PlayerState.elements.message.textContent === "Playlist loaded successfully") {
-              PlayerState.elements.message.style.display = "none";
-            }
-          }, 2000);
-        }
-        
-        isPlaylistLoading = false;
-        resolve(data);
-      })
-      .catch(error => {
-        ErrorLogger.handleError(error, { function: 'loadPlaylistData', url });
-        
-        // Show error message
-        if (PlayerState.elements.message) {
-          PlayerState.elements.message.textContent = "Error loading playlist. Using default playlist.";
-          setTimeout(() => {
-            if (PlayerState.elements.message && 
-                PlayerState.elements.message.textContent === "Error loading playlist. Using default playlist.") {
-              PlayerState.elements.message.style.display = "none";
-            }
-          }, 3000);
-        }
-        
-        // Load default playlist as fallback
-        initializeDefaultPlaylist();
-        
-        isPlaylistLoading = false;
-        reject(error);
-      });
-  });
+    .then(data => {
+      console.log('Playlist data loaded successfully');
+      
+      // Cache the playlist data
+      localPlaylistCache = data;
+      playlistLastLoaded = now;
+      
+      // Process the playlist data
+      processPlaylistData(data);
+      
+      // Hide loading message
+      if (PlayerState.elements.message) {
+        PlayerState.elements.message.textContent = "Playlist loaded successfully";
+        setTimeout(() => {
+          if (PlayerState.elements.message && 
+              PlayerState.elements.message.textContent === "Playlist loaded successfully") {
+            PlayerState.elements.message.style.display = "none";
+          }
+        }, 2000);
+      }
+      
+      isPlaylistLoading = false;
+    })
+    .catch(error => {
+      ErrorLogger.handleError(error, { function: 'loadPlaylistData', url });
+      
+      // Show error message
+      if (PlayerState.elements.message) {
+        PlayerState.elements.message.textContent = "Error loading playlist. Using default playlist.";
+        setTimeout(() => {
+          if (PlayerState.elements.message && 
+              PlayerState.elements.message.textContent === "Error loading playlist. Using default playlist.") {
+            PlayerState.elements.message.style.display = "none";
+          }
+        }, 3000);
+      }
+      
+      // Load default playlist as fallback
+      initializeDefaultPlaylist();
+      
+      isPlaylistLoading = false;
+    });
 }
 
 /**
