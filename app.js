@@ -8,10 +8,15 @@ import { initializeCore, setupMediaElements } from './player-core.js';
 import { initializeUI, setupUIListeners } from './player-ui.js';
 import { initializePlaylist, loadPlaylistData } from './playlist-manager.js';
 import { setupXRMode } from './xr-mode.js';
-import { setupDeviceDetection, setupNetworkMonitoring } from './device-utils.js';
 import { ErrorLogger } from './error-logger.js';
 import { setupMediaPreloader } from './media-preloader.js';
-import { initializeLayoutOptimizer, fixScrubberLayout } from './layout-optimizer.js';
+
+// Import consolidated utility modules
+import { setupNetworkMonitoring } from './utils/network-monitor.js';
+import { detectMobileDevice, detectIOSDevice, checkOrientation } from './utils/device-detection.js';
+import { updateAllLayouts, optimizeMobileLayout, alignPlayerControlsWithIframeMargins } from './utils/layout-utils.js';
+import { setupMediaSync } from './utils/media-sync.js';
+import { showKeyboardShortcutsInfo } from './utils/messaging.js';
 
 // Initialize the application when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
@@ -47,18 +52,29 @@ function initializeApp() {
         // Initialize modules in the correct order
         setupMediaElements();
         setupNetworkMonitoring();
-        setupDeviceDetection();
+        
+        // Set up device detection
+        PlayerState.isMobileDevice = detectMobileDevice();
+        PlayerState.isIOS = detectIOSDevice();
+        
+        // Set up UI
         initializeUI();
+        
+        // Set up core functionality
         initializeCore();
         initializePlaylist();
         setupXRMode();
         setupMediaPreloader();
+        setupMediaSync();
         
         // Initialize layout optimizations
-        initializeLayoutOptimizer();
+        alignPlayerControlsWithIframeMargins();
+        if (PlayerState.isMobileDevice) {
+          optimizeMobileLayout();
+        }
         
-        // Fix scrubber layout issues
-        fixScrubberLayout();
+        // Update all layouts once
+        updateAllLayouts();
         
         // Set up global event listeners
         setupGlobalEventListeners();
@@ -74,14 +90,27 @@ function initializeApp() {
         // Continue with initialization even if autoplay support fails
         setupMediaElements();
         setupNetworkMonitoring();
-        setupDeviceDetection();
+        
+        // Set up device detection
+        PlayerState.isMobileDevice = detectMobileDevice();
+        PlayerState.isIOS = detectIOSDevice();
+        
         initializeUI();
         initializeCore();
         initializePlaylist();
         setupXRMode();
         setupMediaPreloader();
-        initializeLayoutOptimizer();
-        fixScrubberLayout();
+        setupMediaSync();
+        
+        // Initialize layout optimizations
+        alignPlayerControlsWithIframeMargins();
+        if (PlayerState.isMobileDevice) {
+          optimizeMobileLayout();
+        }
+        
+        // Update all layouts once
+        updateAllLayouts();
+        
         setupGlobalEventListeners();
         loadPlaylistData();
         
@@ -98,129 +127,73 @@ function initializeApp() {
       import('./playlist-manager.js').then(module => {
         module.initializeDefaultPlaylist();
         module.populatePlaylist();
-      }).catch(err => {
-        console.error('Recovery failed:', err);
+      }).catch(e => {
+        console.error('Recovery failed:', e);
       });
-    }, 1000);
+    }, 2000);
   }
 }
 
 /**
- * Initialize autoplay support by attempting to unlock audio playback
- * @returns {Promise} A promise that resolves when initialization is complete
+ * Initialize autoplay support detection
+ * @returns {Promise} Promise that resolves when autoplay support has been detected
  */
 function initializeAutoplaySupport() {
-  console.log('Initializing autoplay support...');
-  
   return new Promise((resolve, reject) => {
+    console.log('Checking for autoplay support...');
+    
     try {
-      // Create a user interaction context
-      const userInteractionContext = document.createElement('div');
-      userInteractionContext.setAttribute('tabindex', '0');
-      userInteractionContext.style.position = 'absolute';
-      userInteractionContext.style.top = '0';
-      userInteractionContext.style.left = '0';
-      userInteractionContext.style.width = '1px';
-      userInteractionContext.style.height = '1px';
-      userInteractionContext.style.opacity = '0';
-      userInteractionContext.style.pointerEvents = 'none';
-      document.body.appendChild(userInteractionContext);
+      // Create a test audio element
+      const audio = document.createElement('audio');
+      audio.volume = 0;
       
-      // Focus the element
-      userInteractionContext.focus();
+      // Add dummy source with almost empty data
+      const source = document.createElement('source');
+      source.src = 'data:audio/mpeg;base64,/+MYxAAAAAHlA';
+      source.type = 'audio/mpeg';
+      audio.appendChild(source);
       
-      // Create user gesture events
-      for (const eventType of ['mousedown', 'mouseup', 'click', 'touchstart', 'touchend']) {
-        userInteractionContext.dispatchEvent(new Event(eventType, {
-          bubbles: true,
-          cancelable: true,
-          view: window
-        }));
-      }
+      // Try to play to check for autoplay support
+      const playPromise = audio.play();
       
-      // Single reusable silent audio element
-      let silentAudio = null;
-      let audioContext = null;
-      
-      // Try with AudioContext first (better approach)
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) {
-          audioContext = new AudioContext();
-          const silentBuffer = audioContext.createBuffer(1, 1, 22050);
-          const source = audioContext.createBufferSource();
-          source.buffer = silentBuffer;
-          source.connect(audioContext.destination);
-          source.start(0);
-          console.log('AudioContext created and started');
-          // If this works, we're done - no need for fallback methods
-          setTimeout(() => {
-            userInteractionContext.remove();
-            resolve();
-          }, 100);
-          return;
-        }
-      } catch (audioContextError) {
-        console.warn('AudioContext initialization failed:', audioContextError);
-        // Continue with fallback methods
-      }
-      
-      // Fallback: Try with a single HTML5 Audio element
-      try {
-        silentAudio = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1TSS0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV');
-        silentAudio.volume = 0.01; // Very low volume
-        
-        const playPromise = silentAudio.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            console.log('Successfully played silent audio');
-            setTimeout(() => {
-              silentAudio.pause();
-              silentAudio.remove();
-              silentAudio = null;
-              userInteractionContext.remove();
-              resolve();
-            }, 100);
-          }).catch(error => {
-            console.warn('Failed to play silent audio:', error);
-            userInteractionContext.remove();
-            // Resolve anyway to continue with app initialization
-            resolve();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Autoplay is supported without user interaction');
+            PlayerState.supportsAutoplay = true;
+            resolve(true);
+          })
+          .catch(error => {
+            console.log('Autoplay is not supported without user interaction:', error);
+            PlayerState.supportsAutoplay = false;
+            
+            // Set up user interaction handlers to unlock audio
+            unlockAudioOnUserInteraction();
+            
+            resolve(false);
+          })
+          .finally(() => {
+            // Clean up
+            audio.pause();
+            audio.src = '';
+            audio.load();
           });
-        } else {
-          // Older browsers may not return a promise
-          setTimeout(() => {
-            if (silentAudio) {
-              silentAudio.pause();
-              silentAudio.remove();
-              silentAudio = null;
-            }
-            userInteractionContext.remove();
-            resolve();
-          }, 100);
-        }
-      } catch (error) {
-        console.error('Error during silent audio playback:', error);
-        // Clean up and resolve to continue with initialization
-        if (silentAudio) {
-          silentAudio.remove();
-        }
-        userInteractionContext.remove();
-        resolve();
+      } else {
+        console.log('Autoplay support is unknown (older browser)');
+        PlayerState.supportsAutoplay = false;
+        
+        // Set up user interaction handlers to unlock audio
+        unlockAudioOnUserInteraction();
+        
+        resolve(false);
       }
-      
-      // Set a timeout to ensure we don't hang
-      const timeoutId = setTimeout(() => {
-        console.warn('Autoplay support initialization timed out');
-        if (silentAudio) {
-          silentAudio.pause();
-          silentAudio.remove();
-        }
-        userInteractionContext.remove();
-        resolve(); // Resolve anyway to continue with app initialization
-      }, 2000);
     } catch (error) {
-      console.error('Error during autoplay support initialization:', error);
+      console.error('Error detecting autoplay support:', error);
+      PlayerState.supportsAutoplay = false;
+      
+      // Set up user interaction handlers to unlock audio
+      unlockAudioOnUserInteraction();
+      
       reject(error);
     }
   });
@@ -230,44 +203,77 @@ function initializeAutoplaySupport() {
  * Set up global event listeners
  */
 function setupGlobalEventListeners() {
-  // Listen for keyboard shortcuts
-  document.addEventListener('keydown', handleKeyboardShortcuts);
+  console.log('Setting up global event listeners...');
   
-  // Listen for window resize events
-  window.addEventListener('resize', handleWindowResize);
-  
-  // Listen for visibility changes to handle background/foreground transitions
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  
-  // Listen for user interaction to unlock audio
-  document.addEventListener('click', unlockAudioOnUserInteraction, { once: true });
-  document.addEventListener('touchstart', unlockAudioOnUserInteraction, { once: true });
+  try {
+    // Set up visibility change handler
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Set up keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+    
+    // Set up window resize handler
+    window.addEventListener('resize', handleWindowResize);
+    
+    // Set up orientation change handler for mobile
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => {
+        checkOrientation();
+        updateAllLayouts();
+      }, 300);
+    });
+    
+    console.log('Global event listeners set up');
+  } catch (error) {
+    ErrorLogger.handleError(error, { function: 'setupGlobalEventListeners' });
+  }
 }
 
 /**
- * Unlock audio playback on first user interaction
+ * Set up handlers to unlock audio on user interaction
  */
 function unlockAudioOnUserInteraction() {
-  console.log('User interaction detected, attempting to unlock audio');
+  console.log('Setting up audio unlock on user interaction...');
   
-  // Create and play a silent audio element
-  const silentAudio = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1TSS0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV');
-  silentAudio.volume = 0.01; // Very low volume
-  
-  const playPromise = silentAudio.play();
-  if (playPromise !== undefined) {
-    playPromise
-      .then(() => {
-        console.log('Audio unlocked by user interaction');
-        setTimeout(() => {
-          silentAudio.pause();
-          silentAudio.remove();
-        }, 100);
-      })
-      .catch(error => {
-        console.warn('Failed to unlock audio:', error);
-        silentAudio.remove();
-      });
+  try {
+    const unlockAudio = () => {
+      console.log('User interaction detected, attempting to unlock audio...');
+      
+      if (PlayerState.audio) {
+        // Try to play and immediately pause to unlock audio
+        const playPromise = PlayerState.audio.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Audio unlocked successfully');
+              PlayerState.audio.pause();
+              PlayerState.audioUnlocked = true;
+            })
+            .catch(error => {
+              console.error('Failed to unlock audio:', error);
+            });
+        }
+      }
+      
+      // Remove the event listeners after success or several attempts
+      if (PlayerState.audioUnlocked || PlayerState.unlockAttempts >= 3) {
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('touchend', unlockAudio);
+        document.removeEventListener('keydown', unlockAudio);
+      } else {
+        PlayerState.unlockAttempts++;
+      }
+    };
+    
+    // Add event listeners for various user interactions
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('touchend', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+    
+    console.log('Audio unlock handlers set up');
+  } catch (error) {
+    ErrorLogger.handleError(error, { function: 'unlockAudioOnUserInteraction' });
   }
 }
 
@@ -275,75 +281,87 @@ function unlockAudioOnUserInteraction() {
  * Handle visibility change events
  */
 function handleVisibilityChange() {
-  if (document.hidden) {
-    console.log('Page is now hidden, pausing playback and cleaning up resources');
+  try {
+    const isHidden = document.hidden;
+    console.log(`Document visibility changed: ${isHidden ? 'hidden' : 'visible'}`);
     
-    // Pause playback when page is hidden
-    if (PlayerState.audio && !PlayerState.audio.paused) {
-      PlayerState.audio.pause();
+    // If becoming hidden, store the current playback state
+    if (isHidden) {
+      if (PlayerState.activeMediaElement) {
+        PlayerState.wasPlayingBeforeHidden = !PlayerState.activeMediaElement.paused;
+        
+        // Optionally pause when hidden (configurable)
+        const pauseWhenHidden = false; // Could be a user setting
+        if (pauseWhenHidden && PlayerState.wasPlayingBeforeHidden) {
+          PlayerState.activeMediaElement.pause();
+        }
+      }
+    } else {
+      // If becoming visible again, restore playback if it was playing before
+      if (PlayerState.wasPlayingBeforeHidden && PlayerState.activeMediaElement) {
+        // Attempt to resume playback
+        const playPromise = PlayerState.activeMediaElement.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error('Error resuming playback after visibility change:', error);
+          });
+        }
+      }
     }
-    
-    if (PlayerState.video && !PlayerState.video.paused) {
-      PlayerState.video.pause();
-    }
-    
-    // Clean up resources to save bandwidth
-    import('./media-preloader.js').then(module => {
-      module.cleanupMediaResources(true);  // Clean up all resources when page is hidden
-    }).catch(error => {
-      console.error('Error cleaning up resources:', error);
-    });
-  } else {
-    console.log('Page is now visible');
+  } catch (error) {
+    ErrorLogger.handleError(error, { function: 'handleVisibilityChange' });
   }
 }
 
 /**
- * Handle keyboard shortcuts
+ * Handle keyboard shortcuts for player control
  * @param {KeyboardEvent} event - The keyboard event
  */
 function handleKeyboardShortcuts(event) {
-  // Skip handling if user is typing in an input field
-  if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-    return;
-  }
-  
-  switch (event.key) {
-    case ' ':
-      // Space bar: Play/Pause
-      event.preventDefault(); // Prevent scrolling
-      import('./player-core.js').then(module => {
-        module.togglePlayPause();
-      });
-      break;
-    case 'ArrowRight':
-      // Right arrow: Seek forward
+  try {
+    // Skip if user is typing in an input field
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      return;
+    }
+    
+    const key = event.key.toLowerCase();
+    
+    // Space bar for play/pause
+    if (key === ' ' && !event.ctrlKey && !event.altKey && !event.metaKey) {
       event.preventDefault();
-      if (PlayerState.audio) {
-        PlayerState.audio.currentTime += 10; // Skip ahead 10 seconds
-      }
-      break;
-    case 'ArrowLeft':
-      // Left arrow: Seek backward
-      event.preventDefault();
-      if (PlayerState.audio) {
-        PlayerState.audio.currentTime -= 10; // Skip back 10 seconds
-      }
-      break;
-    case 'm':
-    case 'M':
-      // M: Toggle mute
+      
+      // Toggle play/pause on active media element
       import('./player-core.js').then(module => {
-        module.toggleMute();
+        if (typeof module.togglePlayPause === 'function') {
+          module.togglePlayPause();
+        }
+      }).catch(error => {
+        ErrorLogger.handleError(error, { function: 'handleKeyboardShortcuts' });
       });
-      break;
-    case 'f':
-    case 'F':
-      // F: Toggle fullscreen
-      import('./player-ui.js').then(module => {
-        module.toggleFullscreen();
+    }
+    
+    // 'M' for mute/unmute
+    else if (key === 'm' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      event.preventDefault();
+      
+      // Toggle mute on active media element
+      import('./player-core.js').then(module => {
+        if (typeof module.toggleMute === 'function') {
+          module.toggleMute();
+        }
+      }).catch(error => {
+        ErrorLogger.handleError(error, { function: 'handleKeyboardShortcuts' });
       });
-      break;
+    }
+    
+    // '?' to show keyboard shortcuts
+    else if (key === '?' || (key === '/' && event.shiftKey)) {
+      event.preventDefault();
+      showKeyboardShortcutsInfo();
+    }
+  } catch (error) {
+    ErrorLogger.handleError(error, { function: 'handleKeyboardShortcuts' });
   }
 }
 
@@ -358,15 +376,7 @@ function handleWindowResize() {
   
   PlayerState.resizeTimeout = setTimeout(() => {
     console.log('Window resized, updating layout');
-    
-    // Update layout elements
-    import('./layout-optimizer.js').then(module => {
-      module.ensurePlayerControlsCentered();
-      module.syncAlbumArtworkWidth();
-      module.fixScrubberLayout();
-    }).catch(error => {
-      ErrorLogger.handleError(error, { function: 'handleWindowResize' });
-    });
+    updateAllLayouts();
   }, 100); // Debounce resize events by 100ms
 }
 

@@ -11,6 +11,51 @@
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- External CSS file -->
   <link rel="stylesheet" href="player-controls.css">
+  <!-- Add CORS headers helper for media resources -->
+  <script>
+    // Add extra CORS handling
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check if we have any known problematic URLs
+      const knownProblematicVideos = [
+        '2025-03-16-DTLA-XR-CH1-LOWER.mp4'
+      ];
+      
+      // Add crossorigin attribute to all video and audio elements
+      const mediaElements = document.querySelectorAll('video, audio, source');
+      mediaElements.forEach(element => {
+        if (!element.hasAttribute('crossorigin')) {
+          element.setAttribute('crossorigin', 'anonymous');
+        }
+      });
+      
+      // Add specific error handling for video sources
+      const videoSources = document.querySelectorAll('source');
+      videoSources.forEach(source => {
+        const sourceUrl = source.getAttribute('src') || '';
+        
+        // Check if this is a known problematic video
+        const isProblematic = knownProblematicVideos.some(problematicUrl => 
+          sourceUrl.includes(problematicUrl)
+        );
+        
+        if (isProblematic) {
+          console.log('Detected potentially problematic video URL:', sourceUrl);
+          
+          // Try to preload with a different technique
+          const preloadRequest = new XMLHttpRequest();
+          preloadRequest.open('HEAD', sourceUrl, true);
+          preloadRequest.setRequestHeader('Cache-Control', 'no-cache');
+          preloadRequest.onload = function() {
+            console.log('Preload HEAD request successful for problematic video');
+          };
+          preloadRequest.onerror = function() {
+            console.error('Preload HEAD request failed for problematic video');
+          };
+          preloadRequest.send();
+        }
+      });
+    });
+  </script>
 </head>
 <body>
 
@@ -50,13 +95,15 @@
              device-orientation-controls="enabled: true"
              touch-controls="enabled: true"
              look-controls="reverseMouseDrag: true; touchEnabled: true; magicWindowTrackingEnabled: true">
-      <a-assets>
+      <a-assets timeout="30000">
         <video id="video360" 
                crossorigin="anonymous"
                preload="metadata"
                muted
                playsinline
-               webkit-playsinline>
+               webkit-playsinline
+               oncanplaythrough="console.log('Video can play through')"
+               onerror="console.error('Video loading error:', this.error);">
           <source id="videoSource" src="https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4" type="video/mp4">
         </video>
       </a-assets>
@@ -71,6 +118,11 @@
     <button id="exitXRBtn" class="exit-xr-button">
       <i class="fas fa-music"></i> Return to Audio
     </button>
+  </div>
+
+  <!-- Network status message container -->
+  <div id="networkStatus" class="network-status">
+    <i class="fas fa-wifi"></i> <span id="networkStatusText">Online</span>
   </div>
 
   <!-- Shared player controls for both modes -->

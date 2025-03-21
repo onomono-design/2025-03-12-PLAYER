@@ -2807,10 +2807,33 @@ document.addEventListener('DOMContentLoaded', function () {
   function retryLoadingAudio(audioUrl) {
     console.log(`Retrying audio load for: ${audioUrl}`);
     
+    // Check if this is the La Placita Raid audio that's causing problems
+    const isLaPlacitaRaid = audioUrl.includes("2025-03-15-DTLA-CH-1.mp3");
+    
     // Try with a cache-busting parameter
     const cacheBustUrl = audioUrl + '?retry=' + new Date().getTime();
-    audio.src = cacheBustUrl;
-    audio.load();
+    
+    // For La Placita Raid, try a more aggressive approach
+    if (isLaPlacitaRaid) {
+      console.log('Detected La Placita Raid audio - applying special handling');
+      
+      // Force a timeout before retrying to give the network a break
+      setTimeout(() => {
+        // Try forcing the audio element to completely reset
+        audio.removeAttribute('src');
+        audio.load();
+        
+        // Then set the new source
+        audio.src = cacheBustUrl;
+        audio.load();
+        
+        showMessage("Retrying media load...", 3000);
+      }, 1000);
+    } else {
+      // Standard retry for other tracks
+      audio.src = cacheBustUrl;
+      audio.load();
+    }
     
     // Set a timeout to clear the error message if it loads successfully
     audio.addEventListener('canplaythrough', function onRetrySuccess() {
@@ -2819,9 +2842,39 @@ document.addEventListener('DOMContentLoaded', function () {
     }, { once: true });
     
     // If still fails, try a different approach or show persistent error
-    audio.addEventListener('error', function onRetryError() {
-      console.error('Audio retry failed');
-      message.textContent = "Could not load audio. Please try a different track.";
+    audio.addEventListener('error', function onRetryError(e) {
+      console.error('Audio retry failed', e);
+      
+      // For La Placita Raid specifically, try one more alternative approach
+      if (isLaPlacitaRaid && !this.hasTriedAlternate) {
+        this.hasTriedAlternate = true;
+        
+        console.log('Attempting alternate media load approach for La Placita Raid');
+        
+        // Create a completely new audio element as a final attempt
+        const newAudio = new Audio();
+        newAudio.crossOrigin = "anonymous";
+        newAudio.src = cacheBustUrl;
+        
+        newAudio.addEventListener('canplaythrough', function() {
+          console.log('Alternative loading approach succeeded');
+          // Replace the existing audio element
+          audio.src = cacheBustUrl;
+          audio.load();
+          
+          message.textContent = "Media loaded successfully!";
+          setTimeout(() => { message.style.display = "none"; }, 2000);
+        }, { once: true });
+        
+        newAudio.addEventListener('error', function() {
+          console.error('All retry approaches failed');
+          message.textContent = "Could not load audio. Please try a different track.";
+        }, { once: true });
+        
+        newAudio.load();
+      } else {
+        message.textContent = "Could not load audio. Please try a different track.";
+      }
     }, { once: true });
   }
 
@@ -2830,6 +2883,32 @@ document.addEventListener('DOMContentLoaded', function () {
    */
   function preloadCurrentTrackMedia() {
     if (currentTrackIndex >= 0 && currentTrackIndex < playlist.length) {
+      const currentTrack = playlist[currentTrackIndex];
+      
+      // Special handling for La Placita Raid
+      if (currentTrack.title === "La Placita Raid") {
+        console.log('Applying special preloading for La Placita Raid');
+        
+        // Force network request to be fresh
+        const audioUrl = currentTrack.audio_url || currentTrack.audioSrc;
+        const cacheBustUrl = audioUrl + '?preload=' + new Date().getTime();
+        
+        // Create a separate element for preloading
+        const preloadAudio = new Audio();
+        preloadAudio.crossOrigin = "anonymous";
+        preloadAudio.src = cacheBustUrl;
+        preloadAudio.load();
+        
+        // Listen for successful preload
+        preloadAudio.addEventListener('canplaythrough', function() {
+          console.log('La Placita Raid preloaded successfully');
+          // Clean up
+          preloadAudio.removeAttribute('src');
+          preloadAudio.load();
+        }, { once: true });
+      }
+      
+      // Normal preloading
       preloadMedia();
     }
   }
@@ -3942,3 +4021,44 @@ function setupNetworkMonitoring() {
     }, 5000);
   }
 }
+
+// Add special error recovery for video loading issues
+function handleVideoLoadError(e) {
+  console.error('Error loading video:', e);
+  
+  const video360 = document.getElementById('video360');
+  const videoSource = document.getElementById('videoSource');
+  
+  if (!video360 || !videoSource) return;
+  
+  // Get current video source
+  const currentSrc = videoSource.src;
+  
+  // Check if this is La Placita Raid video
+  if (currentSrc.includes('2025-03-16-DTLA-XR-CH1')) {
+    console.log('Detected La Placita Raid video error - applying recovery');
+    
+    // Try with cache busting
+    const cacheBustUrl = currentSrc + '?retry=' + new Date().getTime();
+    
+    // Force video element to completely reset
+    video360.pause();
+    videoSource.removeAttribute('src');
+    video360.load();
+    
+    // Wait a moment, then try again
+    setTimeout(() => {
+      videoSource.src = cacheBustUrl;
+      video360.load();
+      console.log('Reloaded La Placita Raid video with cache busting');
+    }, 1500);
+  }
+}
+
+// Add error listener to video element
+document.addEventListener('DOMContentLoaded', function() {
+  const video360 = document.getElementById('video360');
+  if (video360) {
+    video360.addEventListener('error', handleVideoLoadError);
+  }
+});

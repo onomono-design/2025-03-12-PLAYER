@@ -4,6 +4,7 @@
  */
 
 import { PlayerState } from './shared-state.js';
+import { showMessage, showErrorMessage } from './utils/messaging.js';
 
 /**
  * Enhanced error logging system
@@ -67,19 +68,8 @@ export const ErrorLogger = {
   handleError: function(error, context = {}) {
     const errorObj = this.logError(error, context);
     
-    // Show user-friendly message if message element exists
-    if (PlayerState.elements.message) {
-      PlayerState.elements.message.textContent = "An error occurred. Please try again.";
-      PlayerState.elements.message.style.display = "block";
-      
-      // Hide message after delay
-      setTimeout(() => {
-        if (PlayerState.elements.message && 
-            PlayerState.elements.message.textContent === "An error occurred. Please try again.") {
-          PlayerState.elements.message.style.display = "none";
-        }
-      }, 5000);
-    }
+    // Show user-friendly error message
+    showErrorMessage("An error occurred. Please try again.");
     
     return errorObj;
   },
@@ -106,17 +96,6 @@ export const ErrorLogger = {
    * @param {number} duration - How long to show the message in milliseconds
    */
   showErrorMessage: function(message, duration = 5000) {
-    if (PlayerState.elements.message) {
-      PlayerState.elements.message.textContent = message;
-      PlayerState.elements.message.style.display = "block";
-      
-      // Hide message after delay
-      setTimeout(() => {
-        if (PlayerState.elements.message && 
-            PlayerState.elements.message.textContent === message) {
-          PlayerState.elements.message.style.display = "none";
-        }
-      }, duration);
-    }
+    showErrorMessage(message, duration);
   }
 }; 

@@ -200,6 +200,14 @@ function processPlaylistData(data) {
     
     // Normalize track data
     const normalizedTracks = tracks.map(track => {
+      // Debug to see what's coming in from the JSON
+      console.log('Processing track:', {
+        title: track.title,
+        chapter: track.chapter,
+        XR_Scene: track.XR_Scene,
+        IsAR: track.IsAR
+      });
+      
       return {
         title: track.title || 'Unknown Title',
         audioSrc: track.audioSrc || track.audio_url || '',
@@ -208,17 +216,24 @@ function processPlaylistData(data) {
         playlistName: track.playlistName || track.playlist || 'Uncategorized',
         chapter: track.chapter || 0,
         duration: track.duration || '0:00',
-        isAR: track.isAR || track.IsAR || false
+        isAR: Boolean(track.isAR || track.IsAR) // Ensure proper boolean conversion
       };
     }).filter(track => track.audioSrc); // Only keep tracks with an audio source
     
     // Organize tracks by playlist
     const playlistGroups = {};
     const flatPlaylist = [];
+    const rawTrackData = []; // Store the original track data
     
-    normalizedTracks.forEach(track => {
+    normalizedTracks.forEach((track, index) => {
       // Add track to flat playlist
       flatPlaylist.push(track);
+      
+      // Store the original raw track data
+      rawTrackData[index] = tracks.find(t => 
+        t.title === track.title && 
+        (t.audio_url === track.audioSrc || t.audioSrc === track.audioSrc)
+      ) || null;
       
       // Group by playlist name
       const playlistName = track.playlistName;
@@ -231,6 +246,7 @@ function processPlaylistData(data) {
     // Update PlayerState
     PlayerState.playlist = flatPlaylist;
     PlayerState.playlistGroups = playlistGroups;
+    PlayerState.rawTrackData = rawTrackData; // Store the raw track data
     
     // Dispatch event for playlist update
     PlayerState.setPlaylist(flatPlaylist);
@@ -238,7 +254,29 @@ function processPlaylistData(data) {
     // Load the first track if no track is currently loaded
     // But don't auto-play it - set autoPlay to false for initial load
     if (PlayerState.currentTrackIndex === -1 && flatPlaylist.length > 0) {
+      console.log('No current track loaded, loading first track');
       loadTrack(0, false); // Explicitly set autoPlay to false for initial load
+    } else if (PlayerState.currentTrackIndex !== -1) {
+      // If we already have a track loaded, update its data if needed
+      const currentTrack = flatPlaylist[PlayerState.currentTrackIndex];
+      if (currentTrack) {
+        console.log('Updating current track with latest data');
+        
+        // Check if artwork URL needs to be updated
+        if (!currentTrack.artworkUrl && rawTrackData[PlayerState.currentTrackIndex]?.artwork_url) {
+          currentTrack.artworkUrl = rawTrackData[PlayerState.currentTrackIndex].artwork_url;
+          console.log('Updated artwork URL from raw data:', currentTrack.artworkUrl);
+          
+          // Update UI with the correct artwork
+          import('./player-ui.js').then(module => {
+            module.updateAudioPlayerUI(
+              currentTrack.title,
+              currentTrack.playlistName,
+              currentTrack.artworkUrl
+            );
+          });
+        }
+      }
     }
   } catch (error) {
     ErrorLogger.handleError(error, { function: 'processPlaylistData' });
@@ -508,10 +546,18 @@ export function loadTrack(index, autoPlay = false) {
     
     console.log(`Loading track: "${track.title}" from playlist "${track.playlistName}"`);
     
-    // Find track element and add loading class
-    const trackElement = document.querySelector(`.playlist-track[data-index="${index}"]`);
-    if (trackElement) {
-      trackElement.classList.add('loading');
+    const rawTrack = PlayerState.rawTrackData && PlayerState.rawTrackData[index];
+    
+    // Debug artwork URLs
+    console.log('Artwork URLs:', {
+      normalizedArtworkUrl: track.artworkUrl,
+      rawArtworkUrl: rawTrack ? rawTrack.artwork_url : 'No raw track data'
+    });
+    
+    // Ensure artwork URL is set correctly
+    if (!track.artworkUrl && rawTrack && rawTrack.artwork_url) {
+      console.log('Using raw track data for artwork URL:', rawTrack.artwork_url);
+      track.artworkUrl = rawTrack.artwork_url;
     }
     
     // Update track indexes
@@ -578,6 +624,7 @@ export function loadTrack(index, autoPlay = false) {
             
             // Then start loading video
             if (PlayerState.video) {
+              console.log(`Loading video source: ${track.videoSrc}`);
               PlayerState.video.src = track.videoSrc;
               PlayerState.video.load();
             }
@@ -587,6 +634,7 @@ export function loadTrack(index, autoPlay = false) {
         // Listen for audio ready state
         if (PlayerState.audio.readyState >= 3) {
           // Audio already ready, load video right away
+          console.log(`Loading video source (audio already ready): ${track.videoSrc}`);
           PlayerState.video.src = track.videoSrc;
           PlayerState.video.load();
         } else {
@@ -594,13 +642,25 @@ export function loadTrack(index, autoPlay = false) {
         }
       } else {
         // Desktop just loads both concurrently
+        console.log(`Loading video source for desktop: ${track.videoSrc}`);
         PlayerState.video.src = track.videoSrc;
         PlayerState.video.load();
       }
     } else if (PlayerState.video) {
-      // Clear video source if track doesn't have one
-      PlayerState.video.removeAttribute('src');
-      PlayerState.video.load();
+      // Check if raw track data has a video source
+      if (PlayerState.rawTrackData && PlayerState.rawTrackData[index] && 
+          PlayerState.rawTrackData[index].XR_Scene) {
+        const rawVideoSrc = PlayerState.rawTrackData[index].XR_Scene;
+        console.log(`Using raw XR_Scene data for video: ${rawVideoSrc}`);
+        track.videoSrc = rawVideoSrc; // Update the track with the correct source
+        PlayerState.video.src = rawVideoSrc;
+        PlayerState.video.load();
+      } else {
+        // Clear video source if track doesn't have one
+        console.log('No video source available, clearing video element');
+        PlayerState.video.removeAttribute('src');
+        PlayerState.video.load();
+      }
     }
     
     // Set the active media element based on current mode
