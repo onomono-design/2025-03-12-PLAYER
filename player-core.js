@@ -6,10 +6,13 @@
 import { PlayerState } from './shared-state.js';
 import { ErrorLogger } from './error-logger.js';
 import { updatePlayPauseButton, updateMuteButton, updateProgressBar, updateTimeDisplay } from './player-ui.js';
+import { detectMobileDevice, detectIOSDevice, checkOrientation } from './utils/device-detection.js';
+import { updateAllLayouts } from './utils/layout-utils.js';
 
 // Variables for media synchronization
 let syncInterval = null;
 let seekingTimeout = null;
+let animationFrameId = null; // Track the animation frame for smooth scrubber updates
 
 /**
  * Initialize the core player functionality
@@ -32,6 +35,9 @@ export function initializeCore() {
     
     // Set up media synchronization
     setupMediaSync();
+    
+    // Start smooth scrubber updates
+    startSmoothScrubberUpdates();
     
     console.log('Player core initialized');
   } catch (error) {
@@ -114,22 +120,46 @@ function setupMediaEventListeners() {
 }
 
 /**
+ * Start smooth scrubber updates using requestAnimationFrame
+ */
+function startSmoothScrubberUpdates() {
+  // Cancel any existing animation frame
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+  }
+  
+  // Create a function to update the scrubber
+  function updateScrubber() {
+    // Skip updates if we're seeking or no active media
+    if (!PlayerState.isSeeking && PlayerState.activeMediaElement) {
+      const activeMedia = PlayerState.activeMediaElement;
+      
+      // Update time display
+      updateTimeDisplay(activeMedia.currentTime, activeMedia.duration);
+      
+      // Update progress bar
+      if (activeMedia.duration > 0) {
+        const percentage = (activeMedia.currentTime / activeMedia.duration) * 100;
+        updateProgressBar(percentage);
+      }
+    }
+    
+    // Request the next frame
+    animationFrameId = requestAnimationFrame(updateScrubber);
+  }
+  
+  // Start the animation loop
+  updateScrubber();
+}
+
+/**
  * Handle time update events from media elements
  */
 function handleTimeUpdate() {
+  // We no longer need to update the UI here as the smooth animation
+  // is handling this more frequently, but keep the function for potential
+  // future needs or for debugging
   if (PlayerState.isSeeking) return;
-  
-  const activeMedia = PlayerState.activeMediaElement;
-  if (!activeMedia) return;
-  
-  // Update time display
-  updateTimeDisplay(activeMedia.currentTime, activeMedia.duration);
-  
-  // Update progress bar
-  if (activeMedia.duration > 0) {
-    const percentage = (activeMedia.currentTime / activeMedia.duration) * 100;
-    updateProgressBar(percentage);
-  }
 }
 
 /**
@@ -202,6 +232,12 @@ function handleMediaEnded() {
   
   // Update UI
   updatePlayPauseButton(true); // paused state
+  
+  // Stop smooth scrubber updates when playback ends
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
   
   // Auto-advance to next track if available
   import('./playlist-manager.js').then(module => {
@@ -295,6 +331,9 @@ export function togglePlayPause() {
         PlayerState.elements.message.style.display = "block";
       }
     }
+    
+    // Ensure smooth scrubber updates are running when playing
+    startSmoothScrubberUpdates();
     
     // If this is the first time playing, set up proper mute states
     if (PlayerState.isFirstPlay) {
@@ -398,11 +437,15 @@ export function togglePlayPause() {
     // Pause the active media element
     PlayerState.activeMediaElement.pause();
     
-    // Update the play/pause button
-    updatePlayPauseButton(true); // true = paused
-    
-    // Update PlayerState
+    // Update UI
     PlayerState.setPlaybackState(false);
+    updatePlayPauseButton(true); // paused state
+    
+    // Stop smooth scrubber updates to save resources
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
   }
 }
 
@@ -996,5 +1039,150 @@ function syncMediaPlayback() {
     }
   } catch (error) {
     console.error('Error synchronizing media playback:', error);
+  }
+}
+
+/**
+ * Set up global event listeners for the player
+ * This should be called from the main app initialization
+ */
+export function setupGlobalEventListeners() {
+  console.log('Setting up global event listeners...');
+  
+  try {
+    // Set up visibility change handler
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Set up keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+    
+    // Set up window resize handler
+    window.addEventListener('resize', handleWindowResize);
+    
+    // Set up orientation change handler for mobile
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => {
+        checkOrientation();
+        updateAllLayouts();
+      }, 300);
+    });
+    
+    // Clean up animation frame when page is unloaded
+    window.addEventListener('beforeunload', () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    });
+    
+    console.log('Global event listeners set up');
+  } catch (error) {
+    ErrorLogger.handleError(error, { function: 'setupGlobalEventListeners' });
+  }
+}
+
+/**
+ * Handle page visibility changes
+ */
+function handleVisibilityChange() {
+  console.log('Visibility state changed:', document.visibilityState);
+  
+  if (document.visibilityState === 'hidden') {
+    // Store current playing state before hiding
+    PlayerState.wasPlayingBeforeHidden = PlayerState.isPlaying;
+    
+    // Optional: Pause media when page is hidden
+    // if (PlayerState.isPlaying && PlayerState.activeMediaElement) {
+    //   PlayerState.activeMediaElement.pause();
+    //   PlayerState.setPlaybackState(false);
+    // }
+    
+    // Stop scrubber updates to save resources when page is hidden
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+  } else if (document.visibilityState === 'visible') {
+    // Resume playback if it was playing before hidden
+    if (PlayerState.wasPlayingBeforeHidden && PlayerState.activeMediaElement) {
+      // Restart smooth scrubber updates
+      startSmoothScrubberUpdates();
+      
+      // Optional: Resume playback
+      // if (PlayerState.activeMediaElement.paused) {
+      //   PlayerState.activeMediaElement.play()
+      //     .then(() => {
+      //       PlayerState.setPlaybackState(true);
+      //       updatePlayPauseButton(false);
+      //     })
+      //     .catch(error => {
+      //       console.error('Error resuming playback:', error);
+      //     });
+      // }
+    }
+  }
+}
+
+/**
+ * Handle keyboard shortcuts
+ */
+function handleKeyboardShortcuts(event) {
+  // Skip if input elements are focused
+  if (document.activeElement.tagName === 'INPUT' || 
+      document.activeElement.tagName === 'TEXTAREA' || 
+      document.activeElement.isContentEditable) {
+    return;
+  }
+  
+  switch (event.key) {
+    case ' ': // Space bar
+      togglePlayPause();
+      event.preventDefault();
+      break;
+    case 'ArrowRight':
+      // Skip forward 5 seconds
+      if (PlayerState.activeMediaElement) {
+        const newTime = Math.min(
+          PlayerState.activeMediaElement.currentTime + 5,
+          PlayerState.activeMediaElement.duration
+        );
+        PlayerState.activeMediaElement.currentTime = newTime;
+        // Ensure scrubber updates immediately
+        const percentage = (newTime / PlayerState.activeMediaElement.duration) * 100;
+        updateProgressBar(percentage);
+        updateTimeDisplay(newTime, PlayerState.activeMediaElement.duration);
+      }
+      event.preventDefault();
+      break;
+    case 'ArrowLeft':
+      // Skip backward 5 seconds
+      if (PlayerState.activeMediaElement) {
+        const newTime = Math.max(PlayerState.activeMediaElement.currentTime - 5, 0);
+        PlayerState.activeMediaElement.currentTime = newTime;
+        // Ensure scrubber updates immediately
+        const percentage = (newTime / PlayerState.activeMediaElement.duration) * 100;
+        updateProgressBar(percentage);
+        updateTimeDisplay(newTime, PlayerState.activeMediaElement.duration);
+      }
+      event.preventDefault();
+      break;
+    case 'm':
+      // Toggle mute
+      toggleMute();
+      event.preventDefault();
+      break;
+  }
+}
+
+/**
+ * Handle window resize events
+ */
+function handleWindowResize() {
+  // Update layouts on resize
+  updateAllLayouts();
+  
+  // Check if orientation has changed (mainly for mobile)
+  if (PlayerState.isMobileDevice) {
+    checkOrientation();
   }
 } 

@@ -361,57 +361,177 @@
       ]
     },
     {
-      "playlist_name": "Japantown",
+      "playlist_name": "Returning to the Harlem of the West",
       "tracks": [
         {
           "chapter": 1,
-          "title": "Welcome to Japantown",
-          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
-          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif",
-          "playlist": "Japantown",
-          "IsAR": true,
-          "XR_Scene": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4",
-          "duration": "2:30"
+          "title": "Return from Topaz",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-1.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH1-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "4:08:00"
         },
         {
           "chapter": 2,
-          "title": "History of Japantown",
-          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
-          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/002+Look_Tin_Eli_12017_Page_17.jpg",
-          "playlist": "Japantown",
+          "title": "Unwelcome",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-2.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH2-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
           "IsAR": false,
           "XR_Scene": "",
-          "duration": "3:15"
+          "duration": "1:44:00"
         },
         {
           "chapter": 3,
-          "title": "Japanese American Experience",
-          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
-          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/003+Chinatown+front_+1906+earthquake.jpg",
-          "playlist": "Japantown",
+          "title": "410 Austin Street",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-3.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH3-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
           "IsAR": false,
           "XR_Scene": "",
-          "duration": "4:10"
+          "duration": "1:25:00"
         },
         {
           "chapter": 4,
-          "title": "Cultural Heritage",
-          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
-          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/004+Spofford+-+1908_.jpg",
-          "playlist": "Japantown",
-          "IsAR": false,
+          "title": "Goofy Village",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-4.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH3b-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": true,
           "XR_Scene": "",
-          "duration": "2:45"
+          "duration": "1:44:00"
         },
         {
           "chapter": 5,
-          "title": "Modern Japantown",
-          "audio_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
-          "artwork_url": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/005+Chinatown+souvenirs.jpg",
-          "playlist": "Japantown",
+          "title": "Life After War",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-5.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH4-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "3:39:00"
+        },
+        {
+          "chapter": 6,
+          "title": "Before the War",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-6.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH5-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "4:54:00"
+        },
+        {
+          "chapter": 7,
+          "title": "Waiting",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-7.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH6-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "1:39:00"
+        },
+        {
+          "chapter": 8,
+          "title": "Internment Arrives",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-8.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH6b-ART.TIF",
+          "playlist": "Returning to the Harlem of the West",
           "IsAR": true,
-          "XR_Scene": "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4",
-          "duration": "3:30"
+          "XR_Scene": "",
+          "duration": "2:06.00"
+        },
+        {
+          "chapter": 9,
+          "title": "Maya's Journey",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-9.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH7-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:32:00"
+        },
+        {
+          "chapter": 10,
+          "title": "The Second Great Migration",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-10.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH8-ART.png",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "3:54:00"
+        },
+        {
+          "chapter": 11,
+          "title": "An Uncertain Return",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-11.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH9-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "3:15:00"
+        },
+        {
+          "chapter": 12,
+          "title": "Hotel Kabuki",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-12.mp3",
+          "artwork_url": "",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "0:45:00"
+        },
+        {
+          "chapter": 13,
+          "title": "The King Café",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-13.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH11-ART.gif",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": true,
+          "XR_Scene": "",
+          "duration": "2:59:00"
+        },
+        {
+          "chapter": 14,
+          "title": "The Bulldozers Arrive",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-14.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH12-ART.png",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "2:30:00"
+        },
+        {
+          "chapter": 15,
+          "title": "Possibilities Lost",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-15.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH13-ART.png",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "1:21:00"
+        },
+        {
+          "chapter": 16,
+          "title": "Three Shades of Blue",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-16.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH14-ART.jpg",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": true,
+          "XR_Scene": "",
+          "duration": "2:13:00"
+        },
+        {
+          "chapter": 17,
+          "title": "Thank You",
+          "audio_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-MP3-AUDIO/2025-03-15-JAPANTOWN-CH-17.mp3",
+          "artwork_url": "https://cmm-cloud-2.s3.us-west-1.amazonaws.com/WALKING+TOURS/2025-03-15-JAPANTOWN/2025-03-15-JAPANTOWN-ART/2025-03-15-JAPANTOWN-CH12-ART.png",
+          "playlist": "Returning to the Harlem of the West",
+          "IsAR": false,
+          "XR_Scene": "",
+          "duration": "0:45:00"
         }
       ]
     },

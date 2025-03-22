@@ -614,6 +614,7 @@ export function loadTrack(index, autoPlay = false) {
       PlayerState.audio.load();
     }
     
+    // Always load video source in the background if available, regardless of mode
     if (PlayerState.video && track.videoSrc) {
       // For mobile devices, we'll use a sequential loading approach
       if (PlayerState.isMobileDevice) {
@@ -663,33 +664,26 @@ export function loadTrack(index, autoPlay = false) {
       }
     }
     
-    // Set the active media element based on current mode
-    if (PlayerState.isXRMode) {
-      if (!track.videoSrc) {
-        // Switch to audio mode if track doesn't have video
-        import('./xr-mode.js').then(module => {
-          module.switchToAudioMode();
-          // After switching mode, ensure proper muting
-          enforceProperMuting();
-          
-          // Now attempt playback if requested
-          if (autoPlay) {
-            attemptPlaybackWithRetry();
-          }
-        });
-      } else {
-        PlayerState.setActiveMediaElement(PlayerState.video);
+    // Always switch to audio mode when changing tracks, regardless of previous mode
+    // This implements the global rule that track changes always default to audio mode
+    const wasInXRMode = PlayerState.isXRMode;
+    
+    if (wasInXRMode) {
+      console.log('Track changed while in XR mode - switching to audio mode per global rule');
+      // Import and call switchToAudioMode, but still load XR content in background
+      import('./xr-mode.js').then(module => {
+        module.switchToAudioMode();
+        
+        // After switching mode, ensure proper muting
         enforceProperMuting();
         
         // Now attempt playback if requested
         if (autoPlay) {
-          // Add a slight delay for mobile devices to ensure resources are loaded
-          setTimeout(() => {
-            attemptPlaybackWithRetry();
-          }, PlayerState.isMobileDevice ? loadTimeout : 0);
+          attemptPlaybackWithRetry();
         }
-      }
+      });
     } else {
+      // Already in audio mode, just set the active media element
       PlayerState.setActiveMediaElement(PlayerState.audio);
       enforceProperMuting();
       

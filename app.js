@@ -4,7 +4,7 @@
  */
 
 import { PlayerState } from './shared-state.js';
-import { initializeCore, setupMediaElements } from './player-core.js';
+import { initializeCore, setupMediaElements, setupGlobalEventListeners } from './player-core.js';
 import { initializeUI, setupUIListeners } from './player-ui.js';
 import { initializePlaylist, loadPlaylistData } from './playlist-manager.js';
 import { setupXRMode } from './xr-mode.js';
@@ -15,7 +15,6 @@ import { setupMediaPreloader } from './media-preloader.js';
 import { setupNetworkMonitoring } from './utils/network-monitor.js';
 import { detectMobileDevice, detectIOSDevice, checkOrientation } from './utils/device-detection.js';
 import { updateAllLayouts, optimizeMobileLayout, alignPlayerControlsWithIframeMargins } from './utils/layout-utils.js';
-import { setupMediaSync } from './utils/media-sync.js';
 import { showKeyboardShortcutsInfo } from './utils/messaging.js';
 
 // Initialize the application when DOM is fully loaded
@@ -65,7 +64,6 @@ function initializeApp() {
         initializePlaylist();
         setupXRMode();
         setupMediaPreloader();
-        setupMediaSync();
         
         // Initialize layout optimizations
         alignPlayerControlsWithIframeMargins();
@@ -100,7 +98,6 @@ function initializeApp() {
         initializePlaylist();
         setupXRMode();
         setupMediaPreloader();
-        setupMediaSync();
         
         // Initialize layout optimizations
         alignPlayerControlsWithIframeMargins();
@@ -111,7 +108,10 @@ function initializeApp() {
         // Update all layouts once
         updateAllLayouts();
         
+        // Set up global event listeners
         setupGlobalEventListeners();
+        
+        // Load playlist data
         loadPlaylistData();
         
         console.log('Application initialization complete (without autoplay support)');

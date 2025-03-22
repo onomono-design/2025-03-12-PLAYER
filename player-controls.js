@@ -115,6 +115,68 @@ function initializePlayer() {
   console.log('Initializing player...');
   
   try {
+    // Set up URL parameters check for default track
+    const urlParams = new URLSearchParams(window.location.search);
+    const defaultTrack = urlParams.get('defaultTrack') || (window.defaultTrackFromURL || 'chinatown_ch1');
+    console.log('URL params check - defaultTrack:', defaultTrack);
+    
+    // Make sure experience is set to started for proper initialization
+    if (typeof PlayerState !== 'undefined') {
+      PlayerState.experienceStarted = true;
+      console.log('Set PlayerState.experienceStarted to true for proper initialization');
+    } else {
+      // If PlayerState is not available, set a flag on the window
+      window.experienceStarted = true;
+      console.log('PlayerState not available, set window.experienceStarted = true');
+    }
+    
+    // Ensure we have the necessary DOM elements
+    const video = document.getElementById('video360');
+    const audio = document.getElementById('audioElement');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const rewindBtn = document.getElementById('rewindBtn');
+    const forwardBtn = document.getElementById('forwardBtn');
+    const muteBtn = document.getElementById('muteBtn');
+    resetCameraBtn = document.getElementById('resetCameraBtn');
+    const viewXRBtn = document.getElementById('viewXRBtn');
+    const exitXRBtn = document.getElementById('exitXRBtn');
+    const message = document.getElementById('message');
+    const scrubber = document.getElementById('scrubber');
+    const scrubberProgress = document.getElementById('scrubberProgress');
+    const currentTimeDisplay = document.getElementById('currentTime');
+    const durationDisplay = document.getElementById('duration');
+    const cameraEntity = document.getElementById('cameraEntity');
+    const permissionOverlay = document.getElementById('permissionOverlay');
+    const enableMotionBtn = document.getElementById('enableMotion');
+    const videosphere = document.getElementById('videosphere');
+    const sceneNameElement = document.getElementById('sceneName');
+    const playlistNameElement = document.getElementById('playlistName');
+    const playerControls = document.querySelector('.player-controls');
+    const aScene = document.querySelector('a-scene');
+    const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+    const videoPlayerContainer = document.getElementById('videoPlayerContainer');
+    const audioTitle = document.getElementById('audioTitle');
+    const audioArtist = document.getElementById('audioArtist');
+    const albumArtwork = document.querySelector('.album-artwork');
+    const albumArtImg = document.getElementById('albumArt');
+    const playlistToggle = document.getElementById('playlistToggle');
+    playlistContainer = document.getElementById('playlistContainer');
+    const playlistOverlay = document.getElementById('playlistOverlay');
+    const playlistClose = document.getElementById('playlistClose');
+    playlistTracks = document.getElementById('playlistTracks');
+    recenterCameraBtn = document.getElementById('recenterCameraBtn'); // Initialize the recenter camera button
+    
+    let isScrubbing = false;
+    let isVideoPreloaded = false;
+    let isAudioPreloaded = false;
+    let isFirstPlay = true; // Track if this is the first time the user presses play
+    let isInputFocused = false; // Track if an input element is focused
+    let aFramePermissionHandled = false; // Track if A-Frame has handled the permission
+    let isSeeking = false; // Track if the video is currently seeking
+    let seekingTimeout = null; // Timeout for seeking state
+    let isXRMode = false; // Track if we're in XR (360°) mode or audio-only mode
+    let activeMediaElement = audio; // Default to audio element as the active media
+
     // Set up network monitoring
     setupNetworkMonitoring();
     
@@ -176,6 +238,55 @@ function initializePlayer() {
     
     // Set up Chapter 1 sync after a short delay
     setTimeout(setupMediaSync, 1000);
+    
+    // Initialize playlists with fetch API
+    loadPlaylistData();
+    
+    // Check for defaultTrack parameter and load appropriate track after playlist is loaded
+    document.addEventListener('playlist-updated', function() {
+      // Default to chinatown_ch1 if no specific defaultTrack is set
+      const trackToLoad = defaultTrack || 'chinatown_ch1';
+      console.log('Loading default track after playlist update:', trackToLoad);
+      
+      if (trackToLoad === 'chinatown_ch1') {
+        console.log('Loading Chinatown Chapter 1 track');
+        
+        // Find the Chinatown Chapter 1 track in the Look Up playlist
+        const chinatownCh1 = playlist.find(track => 
+          track.playlistName === "Look Up" && 
+          (track.title.includes("Chapter 1") || track.chapter === 1) && 
+          track.title.includes("Chinatown")
+        );
+        
+        if (chinatownCh1) {
+          console.log('Found Chinatown Chapter 1 track, loading it by default:', chinatownCh1);
+          loadTrack(chinatownCh1);
+        } else {
+          console.log('Chinatown Chapter 1 track not found in playlist, checking for any Chapter 1 tracks');
+          
+          // Try to find any Chapter 1 track as fallback
+          const anyChapter1 = playlist.find(track => 
+            (track.title.includes("Chapter 1") || track.chapter === 1)
+          );
+          
+          if (anyChapter1) {
+            console.log('Found a Chapter 1 track, loading it as fallback:', anyChapter1);
+            loadTrack(anyChapter1);
+          } else if (playlist && playlist.length > 0) {
+            console.log('No Chapter 1 track found, loading first track as fallback');
+            loadTrack(playlist[0]);
+          }
+        }
+      } else {
+        // Some other track was specified, try to load it
+        console.log('Requested specific track, attempting to load:', trackToLoad);
+        
+        // For now, just load the first track as default fallback
+        if (playlist && playlist.length > 0) {
+          loadTrack(playlist[0]);
+        }
+      }
+    }, { once: true });  // Only run this once when playlist is first updated
     
     // Ensure the playlist is populated (as a fallback)
     setTimeout(() => {
@@ -354,6 +465,10 @@ let isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera M
 let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 let resetCameraBtn;
 let recenterCameraBtn; // Add new global variable for recenter camera button
+
+// Make key variables available globally to help with debugging and direct access
+window.playlist = playlist;
+window.currentTrackIndex = currentTrackIndex;
 
 document.addEventListener('DOMContentLoaded', function () {
   // Get DOM elements
@@ -622,22 +737,42 @@ document.addEventListener('DOMContentLoaded', function () {
       console.log(`Audio currentTime: ${audio.currentTime}, duration: ${audio.duration}`);
       console.log(`Current track index: ${currentTrackIndex}, track: ${playlist[currentTrackIndex]?.title}`);
       
-      if (!isXRMode) {
-        video.currentTime = 0;
-        video.pause();
+      // Always handle auto-advancement regardless of mode
+      video.currentTime = 0;
+      video.pause();
+      
+      // Check if this is the last track
+      if (currentTrackIndex >= playlist.length - 1) {
+        // This is the last track, show end of tour message
+        message.textContent = "End of audio tour reached";
+        message.style.display = "block";
+        setTimeout(() => message.style.display = "none", 3000);
+      } else {
+        // Auto-advance to next track when current track ends
+        console.log("Auto-advancing to next track due to audio ended event");
         
-        // Check if this is the last track
-        if (currentTrackIndex >= playlist.length - 1) {
-          // This is the last track, show end of tour message
-          message.textContent = "End of audio tour reached";
-          message.style.display = "block";
-          setTimeout(() => message.style.display = "none", 3000);
-        } else {
-          // Auto-advance to next track when current track ends
-          console.log("Auto-advancing to next track due to audio ended event");
-          
-          // Use a timeout to ensure the UI has time to update
-          setTimeout(() => {
+        // Use a timeout to ensure the UI has time to update
+        setTimeout(() => {
+          // Always ensure we're in audio mode when changing tracks per global rule
+          if (isXRMode) {
+            console.log("Switching to audio mode for track change per global rule");
+            switchToAudioMode();
+            
+            // Small delay to allow audio mode switch to complete before loading the next track
+            setTimeout(() => {
+              // Load the next track
+              loadNextTrack();
+              
+              // Auto-play the next track after a short delay
+              setTimeout(() => {
+                if (activeMediaElement.paused) {
+                  console.log('Auto-playing next track after ended event');
+                  togglePlayPause();
+                }
+              }, 500);
+            }, 200);
+          } else {
+            // Already in audio mode, just load the next track
             loadNextTrack();
             
             // Auto-play the next track after a short delay
@@ -647,8 +782,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 togglePlayPause();
               }
             }, 500);
-          }, 100);
-        }
+          }
+        }, 100);
       }
     });
     
@@ -657,43 +792,37 @@ document.addEventListener('DOMContentLoaded', function () {
       console.log(`Video currentTime: ${video.currentTime}, duration: ${video.duration}`);
       console.log(`Current track index: ${currentTrackIndex}, track: ${playlist[currentTrackIndex]?.title}`);
       
-      if (isXRMode) {
-        audio.currentTime = 0;
-        audio.pause();
+      // Always handle auto-advancement regardless of mode
+      audio.currentTime = 0;
+      audio.pause();
+      
+      // Check if this is the last track
+      if (currentTrackIndex >= playlist.length - 1) {
+        // This is the last track, show end of tour message
+        message.textContent = "End of audio tour reached";
+        message.style.display = "block";
+        setTimeout(() => message.style.display = "none", 3000);
+      } else {
+        // Auto-advance to next track when current track ends
+        console.log("Auto-advancing to next track due to video ended event");
         
-        // Check if this is the last track
-        if (currentTrackIndex >= playlist.length - 1) {
-          // This is the last track, show end of tour message
-          message.textContent = "End of audio tour reached";
-          message.style.display = "block";
-          setTimeout(() => message.style.display = "none", 3000);
-        } else {
-          // Auto-advance to next track when current track ends
-          console.log("Auto-advancing to next track due to video ended event");
+        // Use a timeout to ensure the UI has time to update
+        setTimeout(() => {
+          // Always switch to audio mode first when advancing to next track, per global rule
+          console.log("Switching to audio mode for track change per global rule");
+          switchToAudioMode();
           
-          // Use a timeout to ensure the UI has time to update
+          // Then load the next track
+          loadNextTrack();
+          
+          // Auto-play the next track after a short delay
           setTimeout(() => {
-            // First switch to audio mode if the next track doesn't have XR content
-            const nextTrack = playlist[currentTrackIndex + 1];
-            const nextTrackHasXR = nextTrack && nextTrack.videoSrc && nextTrack.videoSrc.trim() !== '';
-            
-            if (!nextTrackHasXR) {
-              console.log("Next track doesn't have XR content, switching to audio mode first");
-              switchToAudioMode();
+            if (activeMediaElement.paused) {
+              console.log('Auto-playing next track after ended event');
+              togglePlayPause();
             }
-            
-            // Then load the next track
-            loadNextTrack();
-            
-            // Auto-play the next track after a short delay
-            setTimeout(() => {
-              if (activeMediaElement.paused) {
-                console.log('Auto-playing next track after ended event');
-                togglePlayPause();
-              }
-            }, 500);
-          }, 100);
-        }
+          }, 500);
+        }, 100);
       }
     });
     
@@ -820,7 +949,13 @@ document.addEventListener('DOMContentLoaded', function () {
     
     try {
       // Check if the current track has an XR scene
-      const currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+      let currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+      
+      // Check for manually loaded track data
+      if (!currentTrack && window.manualTrackData) {
+        console.log('Using manually loaded track data for XR mode');
+        currentTrack = window.manualTrackData;
+      }
       
       if (!currentTrack) {
         showMessage("No track loaded. Cannot switch to XR mode.");
@@ -1579,15 +1714,36 @@ document.addEventListener('DOMContentLoaded', function () {
                     const nextIndex = currentTrackIndex + 1;
                     if (playlist && playlist[nextIndex]) {
                       console.log(`Loading track ${nextIndex}: ${playlist[nextIndex].title}`);
-                      loadTrack(playlist[nextIndex]);
                       
-                      // Auto-play the next track
-                      setTimeout(() => {
-                        if (activeMediaElement.paused) {
-                          console.log('Auto-playing next track after ended event');
-                          togglePlayPause();
-                        }
-                      }, 500);
+                      // Always switch to audio mode first when changing tracks per global rule
+                      if (isXRMode) {
+                        console.log("Switching to audio mode first for track change per global rule");
+                        switchToAudioMode();
+                        
+                        // Small delay to allow audio mode switch to complete before loading the new track
+                        setTimeout(() => {
+                          loadTrack(playlist[nextIndex]);
+                          
+                          // Auto-play the next track
+                          setTimeout(() => {
+                            if (activeMediaElement.paused) {
+                              console.log('Auto-playing next track after ended event');
+                              togglePlayPause();
+                            }
+                          }, 500);
+                        }, 200);
+                      } else {
+                        // Already in audio mode, just load the next track
+                        loadTrack(playlist[nextIndex]);
+                        
+                        // Auto-play the next track
+                        setTimeout(() => {
+                          if (activeMediaElement.paused) {
+                            console.log('Auto-playing next track after ended event');
+                            togglePlayPause();
+                          }
+                        }, 500);
+                      }
                     }
                   } catch (error) {
                     console.error("Error in near-end advancement:", error);
@@ -1781,6 +1937,7 @@ document.addEventListener('DOMContentLoaded', function () {
   rewindBtn.addEventListener('click', function () {
     // If we're within the first 3 seconds of the track, go to previous track
     if (activeMediaElement.currentTime <= 3) {
+      // This will enforce our global rule to switch to audio mode first
       loadPreviousTrack();
     } else {
       // Otherwise just rewind 10 seconds
@@ -1792,6 +1949,7 @@ document.addEventListener('DOMContentLoaded', function () {
   forwardBtn.addEventListener('click', function () {
     // If we're within the last 3 seconds of the track, go to next track
     if (activeMediaElement.duration - activeMediaElement.currentTime <= 3) {
+      // This will enforce our global rule to switch to audio mode first
       loadNextTrack();
     } else {
       // Otherwise just forward 10 seconds
@@ -1940,6 +2098,54 @@ document.addEventListener('DOMContentLoaded', function () {
     activeMediaElement.currentTime = scrubber.value;
     const percentage = (scrubber.value / scrubber.max) * 100;
     updateProgressBar(percentage);
+    
+    // Check if user scrubbed to near the end of the track (within last 0.5 seconds)
+    if (activeMediaElement.duration - scrubber.value <= 0.5) {
+      console.log("Scrubber moved to end of track, triggering auto-advance");
+      
+      // Reset playback position to avoid triggering 'ended' event
+      activeMediaElement.currentTime = 0;
+      activeMediaElement.pause();
+      
+      // Use the same auto-advance logic as in the 'ended' event
+      if (currentTrackIndex >= playlist.length - 1) {
+        // This is the last track, show end of tour message
+        message.textContent = "End of audio tour reached";
+        message.style.display = "block";
+        setTimeout(() => message.style.display = "none", 3000);
+      } else {
+        // Switch to audio mode first when advancing to next track, per global rule
+        if (isXRMode) {
+          console.log("Switching to audio mode for track change per global rule");
+          switchToAudioMode();
+          
+          // Small delay to allow audio mode switch to complete before loading the next track
+          setTimeout(() => {
+            // Load the next track
+            loadNextTrack();
+            
+            // Auto-play the next track after a short delay
+            setTimeout(() => {
+              if (activeMediaElement.paused) {
+                console.log('Auto-playing next track after scrubbing to end');
+                togglePlayPause();
+              }
+            }, 500);
+          }, 200);
+        } else {
+          // Already in audio mode, just load the next track
+          loadNextTrack();
+          
+          // Auto-play the next track after a short delay
+          setTimeout(() => {
+            if (activeMediaElement.paused) {
+              console.log('Auto-playing next track after scrubbing to end');
+              togglePlayPause();
+            }
+          }, 500);
+        }
+      }
+    }
   });
   
   scrubber.addEventListener('input', () => {
@@ -1958,6 +2164,54 @@ document.addEventListener('DOMContentLoaded', function () {
     activeMediaElement.currentTime = scrubber.value;
     const percentage = (scrubber.value / scrubber.max) * 100;
     updateProgressBar(percentage);
+    
+    // Check if user scrubbed to near the end of the track (within last 0.5 seconds)
+    if (activeMediaElement.duration - scrubber.value <= 0.5) {
+      console.log("Scrubber moved to end of track via touch, triggering auto-advance");
+      
+      // Reset playback position to avoid triggering 'ended' event
+      activeMediaElement.currentTime = 0;
+      activeMediaElement.pause();
+      
+      // Use the same auto-advance logic as in the 'ended' event
+      if (currentTrackIndex >= playlist.length - 1) {
+        // This is the last track, show end of tour message
+        message.textContent = "End of audio tour reached";
+        message.style.display = "block";
+        setTimeout(() => message.style.display = "none", 3000);
+      } else {
+        // Switch to audio mode first when advancing to next track, per global rule
+        if (isXRMode) {
+          console.log("Switching to audio mode for track change per global rule");
+          switchToAudioMode();
+          
+          // Small delay to allow audio mode switch to complete before loading the next track
+          setTimeout(() => {
+            // Load the next track
+            loadNextTrack();
+            
+            // Auto-play the next track after a short delay
+            setTimeout(() => {
+              if (activeMediaElement.paused) {
+                console.log('Auto-playing next track after scrubbing to end');
+                togglePlayPause();
+              }
+            }, 500);
+          }, 200);
+        } else {
+          // Already in audio mode, just load the next track
+          loadNextTrack();
+          
+          // Auto-play the next track after a short delay
+          setTimeout(() => {
+            if (activeMediaElement.paused) {
+              console.log('Auto-playing next track after scrubbing to end');
+              togglePlayPause();
+            }
+          }, 500);
+        }
+      }
+    }
   });
   
   // ===== HELPER FUNCTIONS =====
@@ -2179,6 +2433,22 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Map the tracks to our internal format
             processLoadedTracks(allTracks);
+            
+            // Force loading the default track if none is loaded
+            setTimeout(() => {
+              // Get the default track from URL parameters
+              const urlParams = new URLSearchParams(window.location.search);
+              const defaultTrack = urlParams.get('defaultTrack') || (window.defaultTrackFromURL || 'chinatown_ch1');
+              
+              // Check if we have a track loaded
+              if (currentTrackIndex === -1 || !playlist[currentTrackIndex]) {
+                console.log('No track loaded after playlist processing, loading default track');
+                
+                // Manually trigger a 'playlist-updated' event to load the default track
+                const event = new CustomEvent('playlist-updated');
+                document.dispatchEvent(event);
+              }
+            }, 500);
           } 
           // Fallback to old structure if playlists array is not present
           else if (data.tracks && Array.isArray(data.tracks)) {
@@ -2614,9 +2884,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /**
    * Load a track from the playlist
-   * @param {Object} track - The track to load
+   * @param {Object} track - The track object to load
    */
   function loadTrack(track) {
+    // Safety check for null or undefined track
+    if (!track) {
+      console.error('Attempted to load null or undefined track');
+      
+      // Try to load a valid track if we have a playlist
+      if (playlist && playlist.length > 0) {
+        console.log('Falling back to first track in playlist');
+        track = playlist[0];
+      } else {
+        // If there's no playlist yet, try to initialize it
+        console.log('No playlist available, initializing default playlist');
+        initializeDefaultPlaylist();
+        
+        // Try to get the first track again
+        if (playlist && playlist.length > 0) {
+          track = playlist[0];
+        } else {
+          console.error('Cannot load any track - no playlist available');
+          // Show error message
+          message.textContent = "Error: Unable to load any track. Please refresh the page.";
+          message.style.display = "block";
+          return;
+        }
+      }
+    }
+  
     // Debug log to help diagnose issues
     console.log('loadTrack called with:', JSON.stringify({
       id: track.id,
@@ -2642,12 +2938,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const wasPlaying = !activeMediaElement.paused;
     console.log(`loadTrack: Previous playback state was ${wasPlaying ? 'playing' : 'paused'}`);
     
+    // Always ensure we're in audio mode when changing tracks per global rule
+    if (isXRMode) {
+      console.log("Track changed while in XR mode - switching to audio mode per global rule");
+      switchToAudioMode();
+    }
+    
     // Update active state in playlist data - only mark this track as active
     playlist.forEach(t => t.active = (t.id === track.id && t.playlistName === track.playlistName));
     
     // Update current track index - make sure we find the exact track with matching playlist
     currentTrackIndex = playlist.findIndex(t => t.id === track.id && t.playlistName === track.playlistName);
     console.log(`Loading track ${track.id}, index ${currentTrackIndex}: "${track.title}" from playlist "${track.playlistName}"`);
+    
+    // Update global window variables for direct access
+    window.playlist = playlist;
+    window.currentTrackIndex = currentTrackIndex;
     
     // Update UI to show active track
     const trackElements = playlistTracks.querySelectorAll('.playlist-track');
@@ -3285,13 +3591,31 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     
-    // Load the next track in the same playlist
-    const nextTrackInPlaylist = playlistTracks[currentPlaylistIndex + 1];
-    if (nextTrackInPlaylist) {
-      console.log(`Loading next track in playlist: "${nextTrackInPlaylist.title}"`);
-      loadTrack(nextTrackInPlaylist);
+    // Always switch to audio mode first when changing tracks per global rule
+    if (isXRMode) {
+      console.log("Switching to audio mode first for track change per global rule");
+      switchToAudioMode();
+      
+      // Small delay to allow audio mode switch to complete before loading the new track
+      setTimeout(() => {
+        // Load the next track in the same playlist
+        const nextTrackInPlaylist = playlistTracks[currentPlaylistIndex + 1];
+        if (nextTrackInPlaylist) {
+          console.log(`Loading next track in playlist: "${nextTrackInPlaylist.title}"`);
+          loadTrack(nextTrackInPlaylist);
+        } else {
+          console.error('Failed to find next track in playlist');
+        }
+      }, 200);
     } else {
-      console.error('Failed to find next track in playlist');
+      // Already in audio mode, just load the next track
+      const nextTrackInPlaylist = playlistTracks[currentPlaylistIndex + 1];
+      if (nextTrackInPlaylist) {
+        console.log(`Loading next track in playlist: "${nextTrackInPlaylist.title}"`);
+        loadTrack(nextTrackInPlaylist);
+      } else {
+        console.error('Failed to find next track in playlist');
+      }
     }
   }
 
@@ -3327,13 +3651,31 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     
-    // Load the previous track in the same playlist
-    const prevTrackInPlaylist = playlistTracks[currentPlaylistIndex - 1];
-    if (prevTrackInPlaylist) {
-      console.log(`Loading previous track in playlist: "${prevTrackInPlaylist.title}"`);
-      loadTrack(prevTrackInPlaylist);
+    // Always switch to audio mode first when changing tracks per global rule
+    if (isXRMode) {
+      console.log("Switching to audio mode first for track change per global rule");
+      switchToAudioMode();
+      
+      // Small delay to allow audio mode switch to complete before loading the new track
+      setTimeout(() => {
+        // Load the previous track in the same playlist
+        const prevTrackInPlaylist = playlistTracks[currentPlaylistIndex - 1];
+        if (prevTrackInPlaylist) {
+          console.log(`Loading previous track in playlist: "${prevTrackInPlaylist.title}"`);
+          loadTrack(prevTrackInPlaylist);
+        } else {
+          console.error('Failed to find previous track in playlist');
+        }
+      }, 200);
     } else {
-      console.error('Failed to find previous track in playlist');
+      // Already in audio mode, just load the previous track
+      const prevTrackInPlaylist = playlistTracks[currentPlaylistIndex - 1];
+      if (prevTrackInPlaylist) {
+        console.log(`Loading previous track in playlist: "${prevTrackInPlaylist.title}"`);
+        loadTrack(prevTrackInPlaylist);
+      } else {
+        console.error('Failed to find previous track in playlist');
+      }
     }
   }
 
@@ -3341,87 +3683,6 @@ document.addEventListener('DOMContentLoaded', function () {
   console.log('DOM fully loaded, calling initializePlayer');
   initializePlayer();
   
-  // Add robust event listeners for the 'ended' event to ensure auto-advancement always works
-  audio.addEventListener('ended', function() {
-    console.log('Audio ended event fired');
-    
-    // Get the current track and its playlist
-    const currentTrack = playlist[currentTrackIndex];
-    if (!currentTrack) {
-      console.error('No current track found at index', currentTrackIndex);
-      return;
-    }
-    
-    // Filter tracks to find those in the same playlist
-    const playlistTracks = playlist.filter(track => track.playlistName === currentTrack.playlistName);
-    
-    // Find the current track's position within its playlist
-    const currentPlaylistIndex = playlistTracks.findIndex(track => track.id === currentTrack.id);
-    
-    console.log(`Track ended: "${currentTrack.title}" from playlist "${currentTrack.playlistName}"`);
-    console.log(`Current position in playlist: ${currentPlaylistIndex + 1}/${playlistTracks.length}`);
-    
-    // Check if this is the last track in the playlist
-    if (currentPlaylistIndex === playlistTracks.length - 1) {
-      console.log(`This was the last track in the "${currentTrack.playlistName}" playlist. Not advancing to next track.`);
-      message.textContent = `End of playlist: "${currentTrack.playlistName}"`;
-      message.style.display = "block";
-      setTimeout(() => {
-        message.style.display = "none";
-      }, 3000);
-      return;
-    }
-    
-    // If not the last track, find the next track in the same playlist
-    const nextTrackInPlaylist = playlistTracks[currentPlaylistIndex + 1];
-    if (nextTrackInPlaylist) {
-      console.log(`Loading next track in playlist: "${nextTrackInPlaylist.title}"`);
-      loadTrack(nextTrackInPlaylist);
-    } else {
-      console.error('Failed to find next track in playlist');
-    }
-  });
-  
-  video.addEventListener('ended', function() {
-    console.log('Video ended event fired');
-    
-    // Get the current track and its playlist
-    const currentTrack = playlist[currentTrackIndex];
-    if (!currentTrack) {
-      console.error('No current track found at index', currentTrackIndex);
-      return;
-    }
-    
-    // Filter tracks to find those in the same playlist
-    const playlistTracks = playlist.filter(track => track.playlistName === currentTrack.playlistName);
-    
-    // Find the current track's position within its playlist
-    const currentPlaylistIndex = playlistTracks.findIndex(track => track.id === currentTrack.id);
-    
-    console.log(`Track ended: "${currentTrack.title}" from playlist "${currentTrack.playlistName}"`);
-    console.log(`Current position in playlist: ${currentPlaylistIndex + 1}/${playlistTracks.length}`);
-    
-    // Check if this is the last track in the playlist
-    if (currentPlaylistIndex === playlistTracks.length - 1) {
-      console.log(`This was the last track in the "${currentTrack.playlistName}" playlist. Not advancing to next track.`);
-      message.textContent = `End of playlist: "${currentTrack.playlistName}"`;
-      message.style.display = "block";
-      setTimeout(() => {
-        message.style.display = "none";
-      }, 3000);
-      return;
-    }
-    
-    // If not the last track, find the next track in the same playlist
-    const nextTrackInPlaylist = playlistTracks[currentPlaylistIndex + 1];
-    if (nextTrackInPlaylist) {
-      console.log(`Loading next track in playlist: "${nextTrackInPlaylist.title}"`);
-      loadTrack(nextTrackInPlaylist);
-    } else {
-      console.error('Failed to find next track in playlist');
-    }
-  });
-
   /**
    * Handle click on a playlist track
    * @param {Event} event - The click event
@@ -3446,14 +3707,32 @@ document.addEventListener('DOMContentLoaded', function () {
       activeMediaElement.pause();
     }
     
-    // Load the selected track
-    loadTrack(playlist[trackIndex], wasPlaying);
-    
-    // Reset playlist positioning before closing to ensure smooth animation
-    resetPlaylistPositioning(true, true);
-    
-    // Close the playlist
-    togglePlaylist();
+    // Always switch to audio mode first when changing tracks per global rule
+    if (isXRMode) {
+      console.log("Switching to audio mode first for track change per global rule");
+      switchToAudioMode();
+      
+      // Small delay to allow audio mode switch to complete before loading the new track
+      setTimeout(() => {
+        // Load the selected track
+        loadTrack(playlist[trackIndex], wasPlaying);
+        
+        // Reset playlist positioning before closing to ensure smooth animation
+        resetPlaylistPositioning(true, true);
+        
+        // Close the playlist
+        togglePlaylist();
+      }, 200);
+    } else {
+      // Already in audio mode, just load the track
+      loadTrack(playlist[trackIndex], wasPlaying);
+      
+      // Reset playlist positioning before closing to ensure smooth animation
+      resetPlaylistPositioning(true, true);
+      
+      // Close the playlist
+      togglePlaylist();
+    }
   }
 
   // Add event listener for recenter camera button

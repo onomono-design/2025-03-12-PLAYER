@@ -193,6 +193,37 @@
   <!-- External JavaScript file -->
   <script src="player-controls.js"></script>
   
+  <!-- Setup script to handle URL parameters -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Pass URL parameters to player-controls.js initialization
+      const urlParams = new URLSearchParams(window.location.search);
+      const defaultTrack = urlParams.get('defaultTrack');
+      
+      // If defaultTrack is specified, store it in a global variable for player-controls.js to use
+      if (defaultTrack) {
+        console.log('Setting default track from URL parameter:', defaultTrack);
+        window.defaultTrackFromURL = defaultTrack;
+      }
+      
+      // If no specific track is provided, default to chinatown_ch1
+      if (!defaultTrack && !window.defaultTrackFromURL) {
+        console.log('No default track specified, defaulting to chinatown_ch1');
+        window.defaultTrackFromURL = 'chinatown_ch1';
+      }
+      
+      // Check if this is a desktop browser and hide permission overlay
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (!isMobile) {
+        console.log('Desktop browser detected, hiding permission overlay');
+        const permissionOverlay = document.getElementById('permissionOverlay');
+        if (permissionOverlay) {
+          permissionOverlay.style.display = 'none';
+        }
+      }
+    });
+  </script>
+  
   <!-- Custom A-Frame component for camera recentering -->
   <script>
     // Register a custom component for camera recentering
@@ -605,6 +636,120 @@
       };
       
       console.log('Dev functions available: showStartExperienceOverlay(), showDevTools()');
+    });
+  </script>
+
+  <script>
+    // Force initial content to show up immediately
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set default content for audio player
+      const audioTitle = document.getElementById('audioTitle');
+      const audioArtist = document.getElementById('audioArtist');
+      const albumArt = document.getElementById('albumArt');
+      const message = document.getElementById('message');
+      const sceneName = document.getElementById('sceneName');
+      const playlistName = document.getElementById('playlistName');
+      const viewXRBtn = document.getElementById('viewXRBtn');
+      
+      if (audioTitle) audioTitle.textContent = "Chapter 1: Chinatown Memories";
+      if (audioArtist) audioArtist.textContent = "Look Up";
+      if (albumArt) albumArt.src = "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif";
+      if (sceneName) sceneName.textContent = "Chapter 1: Chinatown Memories";
+      if (playlistName) playlistName.textContent = "Look Up";
+      
+      // Set initial audio and video sources
+      const audioElement = document.getElementById('audioElement');
+      const audioSource = document.getElementById('audioSource');
+      const video360 = document.getElementById('video360');
+      const videoSource = document.getElementById('videoSource');
+      
+      if (audioSource) audioSource.src = "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3";
+      if (videoSource) videoSource.src = "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4";
+      
+      if (audioElement) audioElement.load();
+      if (video360) video360.load();
+      
+      // Create a default track right away
+      window.manualTrackData = {
+        id: 1,
+        title: "Chapter 1: Chinatown Memories",
+        playlistName: "Look Up",
+        audioSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+        videoSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4",
+        artworkUrl: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif",
+        isAR: true,
+        active: true,
+        chapter: 1,
+        duration: "3:45"
+      };
+      
+      // Initialize with a default placeholder playlist if window.playlist is not ready
+      if (!window.playlist || !Array.isArray(window.playlist) || window.playlist.length === 0) {
+        window.playlist = [window.manualTrackData];
+        window.currentTrackIndex = 0;
+        console.log('Created and set default playlist with Chapter 1');
+      }
+      
+      // Fix the viewXRBtn to work even if the playlist hasn't loaded yet
+      if (viewXRBtn) {
+        // Keep the original click handler but add our own handler that runs first
+        const originalClickHandler = viewXRBtn.onclick;
+        viewXRBtn.onclick = function(e) {
+          // Check if a track is loaded properly
+          if (window.playlist && window.currentTrackIndex !== -1) {
+            console.log('Track already loaded, using normal XR mode switch');
+            return;
+          }
+          
+          console.log('No track loaded yet, using hard-coded track for XR mode');
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Directly set the data we know should be there
+          window.manualTrackData = {
+            id: 1,
+            title: "Chapter 1: Chinatown Memories",
+            playlistName: "Look Up",
+            audioSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/japantown+audio+only+test.mp3",
+            videoSrc: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-08-JAPANTOWN-XR1-LOW.mp4",
+            artworkUrl: "https://cmm-cloud-storage.s3.us-east-2.amazonaws.com/2025-03-12-CHINATOWN-AUDIOTOUR/2025-03-12-CHINATOWN-ARTWORK/001+Ch1-TelecomAR-ezgif.com-optimize.gif",
+            isAR: true
+          };
+          
+          // Now we can go directly to XR mode
+          const videoPlayerContainer = document.getElementById('videoPlayerContainer');
+          const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+          
+          if (videoPlayerContainer && audioPlayerContainer) {
+            console.log('Manually switching to XR mode');
+            
+            // Hide audio player container and show video player container
+            audioPlayerContainer.classList.add('hidden');
+            videoPlayerContainer.classList.remove('hidden');
+            
+            // Set video source if needed
+            if (videoSource && videoSource.src.trim() === '') {
+              videoSource.src = window.manualTrackData.videoSrc;
+            }
+            
+            // Load and play the video
+            if (video360) {
+              video360.load();
+              video360.play().catch(err => console.error('Error playing video:', err));
+            }
+            
+            document.body.classList.add('xr-mode');
+            return false;
+          }
+        };
+      }
+      
+      // Hide loading message
+      if (message) {
+        setTimeout(() => {
+          message.style.display = "none";
+        }, 1500);
+      }
     });
   </script>
 </body>
