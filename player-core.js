@@ -228,7 +228,7 @@ function handlePlaying() {
  * Handle media ended events
  */
 function handleMediaEnded() {
-  console.log('Media playback ended');
+  console.log('Media playback ended event fired');
   
   // Update UI
   updatePlayPauseButton(true); // paused state
@@ -239,9 +239,14 @@ function handleMediaEnded() {
     animationFrameId = null;
   }
   
+  // Set endTriggered flag to prevent duplicate handling
+  if (PlayerState.activeMediaElement) {
+    PlayerState.activeMediaElement.endTriggered = true;
+  }
+  
   // Auto-advance to next track if available
   import('./playlist-manager.js').then(module => {
-    module.loadNextTrack();
+    module.loadNextTrack(true); // true to auto-play
   }).catch(error => {
     ErrorLogger.handleError(error, { function: 'handleMediaEnded' });
   });

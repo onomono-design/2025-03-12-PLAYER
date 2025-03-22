@@ -1676,86 +1676,71 @@ document.addEventListener('DOMContentLoaded', function () {
       // Update progress bar width
       updateProgressBar(progressPercentage);
       
-      // IMPORTANT: Disable the near-end detection for now as it's causing issues
-      // We'll rely on the 'ended' event instead
+      // Check if we've reached the end of the track (within 0.2 seconds or at 99.5% of duration)
+      // This is a more reliable way to detect end of playback than waiting for the 'ended' event
+      const isAtEnd = (duration > 0) && 
+                      ((duration - currentTime <= 0.2) || 
+                       (progressPercentage >= 99.5));
       
-      // Only check for near-end if we're playing a track with a valid duration
-      // AND we're not in the first track (which might be the test track)
-      if (duration > 120 && currentTrackIndex > 0) {
-        // Enhanced check for end of track - more aggressive to catch potential issues
-        // Check if we're near the end of the track (within last 2 seconds or at 98% of duration)
-        const isNearEnd = (duration > 0) && 
-                          ((duration - currentTime <= 2) || 
-                           (progressPercentage >= 98));
-                           
-        if (isNearEnd && !activeMediaElement.paused) {
-          console.log(`Enhanced near-end detection: ${currentTime}/${duration} (${Math.round(progressPercentage)}%)`);
+      if (isAtEnd && !activeMediaElement.paused) {
+        console.log(`End of track detected via time update: ${currentTime}/${duration} (${Math.round(progressPercentage)}%)`);
+        
+        // Only trigger once when we reach this point
+        if (!activeMediaElement.endTriggered) {
+          activeMediaElement.endTriggered = true;
+          console.log("End of track detected, triggering auto-advance");
           
-          // Only trigger once when we reach this point
-          if (!activeMediaElement.nearEndTriggered) {
-            activeMediaElement.nearEndTriggered = true;
-            console.log("Track nearly complete, preparing to advance");
+          // Force pause to update UI state
+          activeMediaElement.pause();
+          updatePlayPauseButton();
+          
+          // If not the last track, load the next one
+          if (currentTrackIndex < playlist.length - 1) {
+            console.log("Auto-advancing to next track");
             
-            // If not the last track, prepare to load the next one
-            if (currentTrackIndex < playlist.length - 1) {
-              console.log("Advancing to next track due to enhanced near-end detection");
-              
-              // Force pause to prevent double-triggering with the ended event
-              activeMediaElement.pause();
-              
-              // Use a timeout to ensure we don't interfere with any 'ended' event
-              setTimeout(() => {
-                // Double-check we're still near the end (in case user scrubbed back)
-                if ((duration - activeMediaElement.currentTime) <= 2 || 
-                    ((activeMediaElement.currentTime / duration) * 100) >= 98) {
-                  console.log("Still near end, loading next track");
+            // Use a timeout to ensure the UI has time to update
+            setTimeout(() => {
+              // Always ensure we're in audio mode when changing tracks per global rule
+              if (isXRMode) {
+                console.log("Switching to audio mode for track change per global rule");
+                switchToAudioMode();
+                
+                // Small delay to allow audio mode switch to complete before loading the next track
+                setTimeout(() => {
+                  // Load the next track
+                  loadNextTrack();
                   
-                  try {
-                    const nextIndex = currentTrackIndex + 1;
-                    if (playlist && playlist[nextIndex]) {
-                      console.log(`Loading track ${nextIndex}: ${playlist[nextIndex].title}`);
-                      
-                      // Always switch to audio mode first when changing tracks per global rule
-                      if (isXRMode) {
-                        console.log("Switching to audio mode first for track change per global rule");
-                        switchToAudioMode();
-                        
-                        // Small delay to allow audio mode switch to complete before loading the new track
-                        setTimeout(() => {
-                          loadTrack(playlist[nextIndex]);
-                          
-                          // Auto-play the next track
-                          setTimeout(() => {
-                            if (activeMediaElement.paused) {
-                              console.log('Auto-playing next track after ended event');
-                              togglePlayPause();
-                            }
-                          }, 500);
-                        }, 200);
-                      } else {
-                        // Already in audio mode, just load the next track
-                        loadTrack(playlist[nextIndex]);
-                        
-                        // Auto-play the next track
-                        setTimeout(() => {
-                          if (activeMediaElement.paused) {
-                            console.log('Auto-playing next track after ended event');
-                            togglePlayPause();
-                          }
-                        }, 500);
-                      }
+                  // Auto-play the next track after a short delay
+                  setTimeout(() => {
+                    if (activeMediaElement.paused) {
+                      console.log('Auto-playing next track after end detection');
+                      togglePlayPause();
                     }
-                  } catch (error) {
-                    console.error("Error in near-end advancement:", error);
+                  }, 500);
+                }, 200);
+              } else {
+                // Already in audio mode, just load the next track
+                loadNextTrack();
+                
+                // Auto-play the next track after a short delay
+                setTimeout(() => {
+                  if (activeMediaElement.paused) {
+                    console.log('Auto-playing next track after end detection');
+                    togglePlayPause();
                   }
-                }
-              }, 200);
-            }
+                }, 500);
+              }
+            }, 100);
+          } else {
+            // This is the last track, show end of tour message
+            message.textContent = "End of audio tour reached";
+            message.style.display = "block";
+            setTimeout(() => message.style.display = "none", 3000);
           }
-        } else {
-          // Reset the flag when not near the end
-          activeMediaElement.nearEndTriggered = false;
         }
+      } else {
+        // Reset the flag when not at the end
+        activeMediaElement.endTriggered = false;
       }
     }
   }
@@ -3104,6 +3089,10 @@ document.addEventListener('DOMContentLoaded', function () {
       // Try to recover with a different file format or retry
       retryLoadingAudio(normalizedTrack.audioSrc);
     }, { once: true });
+    
+    // Reset end detection flag
+    audio.endTriggered = false;
+    video.endTriggered = false;
   }
 
   /**
@@ -3722,6 +3711,9 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Close the playlist
         togglePlaylist();
+        
+        // Force update the play/pause button to match actual state
+        updatePlayPauseButton(true); // Set to paused state initially
       }, 200);
     } else {
       // Already in audio mode, just load the track
@@ -3732,6 +3724,9 @@ document.addEventListener('DOMContentLoaded', function () {
       
       // Close the playlist
       togglePlaylist();
+      
+      // Force update the play/pause button to match actual state
+      updatePlayPauseButton(true); // Set to paused state initially
     }
   }
 

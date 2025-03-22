@@ -600,6 +600,16 @@ export function loadTrack(index, autoPlay = false) {
     if (PlayerState.audio) PlayerState.audio.pause();
     if (PlayerState.video) PlayerState.video.pause();
     
+    // Set playback state to paused initially
+    PlayerState.setPlaybackState(false);
+    
+    // Ensure UI reflects the paused state
+    import('./player-ui.js').then(module => {
+      module.updatePlayPauseButton(true); // true = paused
+    }).catch(error => {
+      console.error('Error updating play button state:', error);
+    });
+    
     // Clear any pending playback attempt timeout
     if (window.playbackAttemptTimeout) {
       clearTimeout(window.playbackAttemptTimeout);
@@ -679,7 +689,17 @@ export function loadTrack(index, autoPlay = false) {
         
         // Now attempt playback if requested
         if (autoPlay) {
-          attemptPlaybackWithRetry();
+          // Add a slight delay for resources to load
+          setTimeout(() => {
+            console.log('Attempting playback of newly loaded track due to autoPlay flag (after XR mode)');
+            
+            import('./player-core.js').then(module => {
+              // Use togglePlayPause to ensure proper UI updates
+              module.togglePlayPause();
+            }).catch(error => {
+              console.error('Error auto-playing track after XR mode:', error);
+            });
+          }, 500);
         }
       });
     } else {
@@ -689,10 +709,17 @@ export function loadTrack(index, autoPlay = false) {
       
       // Now attempt playback if requested
       if (autoPlay) {
-        // Add a slight delay for mobile devices to ensure resources are loaded
+        // Add a slight delay for resources to load
         setTimeout(() => {
-          attemptPlaybackWithRetry();
-        }, PlayerState.isMobileDevice ? loadTimeout : 0);
+          console.log('Attempting playback of newly loaded track due to autoPlay flag');
+          
+          import('./player-core.js').then(module => {
+            // Use togglePlayPause to ensure proper UI updates
+            module.togglePlayPause();
+          }).catch(error => {
+            console.error('Error auto-playing track:', error);
+          });
+        }, PlayerState.isMobileDevice ? loadTimeout : 500);
       }
     }
     
