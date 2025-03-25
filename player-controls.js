@@ -970,11 +970,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
       
+      // Check if this is an XR-only track (no audio source)
+      const isXROnlyTrack = !currentTrack.audioSrc || currentTrack.audioSrc.trim() === '';
+      
       // Show loading message
       showMessage("Preparing 360° experience...");
       
       // Check and preload the video before switching
-      preloadVideoBeforeSwitch(videoSrc);
+      preloadVideoBeforeSwitch(videoSrc, isXROnlyTrack);
     } catch (error) {
       console.error('Error switching to XR mode:', error);
       showMessage("Error switching to XR mode. Please try again.");
@@ -984,8 +987,9 @@ document.addEventListener('DOMContentLoaded', function () {
   /**
    * Preload video before switching to XR mode to ensure it works
    * @param {string} videoSrc - The video source URL
+   * @param {boolean} isXROnlyTrack - Whether this track is XR-only with no audio
    */
-  function preloadVideoBeforeSwitch(videoSrc) {
+  function preloadVideoBeforeSwitch(videoSrc, isXROnlyTrack = false) {
     // Store the current playback state
     const wasPlaying = activeMediaElement && !activeMediaElement.paused;
     
@@ -1021,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       
       // Now we can safely switch to XR mode
-      completeXRModeSwitch(wasPlaying);
+      completeXRModeSwitch(wasPlaying, isXROnlyTrack);
       
       // Clean up temporary element
       tempVideo.src = '';
@@ -1054,7 +1058,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         // Continue to XR mode anyway, the video might work
-        completeXRModeSwitch(wasPlaying);
+        completeXRModeSwitch(wasPlaying, isXROnlyTrack);
       } else {
         // For other videos, show an error message
         showMessage("Error loading 360° video. Please try again.");
@@ -1073,13 +1077,16 @@ document.addEventListener('DOMContentLoaded', function () {
       console.warn('Video preload timeout, continuing to XR mode anyway');
       
       // Continue to XR mode anyway, the video might work
-      completeXRModeSwitch(wasPlaying);
+      completeXRModeSwitch(wasPlaying, isXROnlyTrack);
       
-      // Clean up temp element
+      // Clean up temporary element
       tempVideo.src = '';
       tempVideo.load();
-    }, 5000); // 5 second timeout
+    }, 10000); // 10 second timeout
   }
+  
+  // Expose the function globally for other modules to use
+  window.preloadVideoBeforeSwitch = preloadVideoBeforeSwitch;
   
   /**
    * Show a message with automatic timeout
@@ -1827,7 +1834,44 @@ document.addEventListener('DOMContentLoaded', function () {
   
   // Exit XR button handler
   exitXRBtn.addEventListener('click', function() {
-    // Switch to audio-only mode
+    console.log('Exit XR button clicked');
+    
+    // Check if this is an XR-only track
+    const currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+    if (currentTrack) {
+      // Check for XR-only flags first
+      if (currentTrack.isXROnlyTrack === true) {
+        console.log('Blocked exit to audio mode: This is an XR-only track with no audio');
+        // Show a message to the user
+        if (message) {
+          message.textContent = "Audio mode not available for this track";
+          message.style.display = "block";
+          // Hide message after a delay
+          setTimeout(() => {
+            message.style.display = "none";
+          }, 2000);
+        }
+        return; // Prevent switching
+      }
+      
+      // Secondary check for audio source
+      const hasAudio = currentTrack.audioSrc && currentTrack.audioSrc.trim() !== '';
+      if (!hasAudio) {
+        console.log('Blocked exit to audio mode: No audio source available');
+        // Show a message to the user
+        if (message) {
+          message.textContent = "Audio mode not available for this track";
+          message.style.display = "block";
+          // Hide message after a delay
+          setTimeout(() => {
+            message.style.display = "none";
+          }, 2000);
+        }
+        return; // Prevent switching
+      }
+    }
+    
+    // If we made it here, it's safe to switch to audio mode
     switchToAudioMode();
   });
   
@@ -2998,9 +3042,14 @@ document.addEventListener('DOMContentLoaded', function () {
       
       // Fallback to the loadeddata event if loadedmetadata doesn't fire
       audio.addEventListener('loadeddata', checkAudioDuration, { once: true });
+    } else if (hasXRScene) {
+      // XR-only track (no audio but has XR scene)
+      console.log('Track has no audio source but has XR scene - will force XR mode');
+      // Don't set audio.src for XR-only tracks
     } else {
-      console.error('Track has no audio source');
-      message.textContent = "Error: No audio source found for this track.";
+      // No audio and no XR scene - this is an error
+      console.error('Track has no audio source and no XR scene');
+      message.textContent = "Error: No audio or XR content found for this track.";
       return;
     }
     
@@ -3018,6 +3067,54 @@ document.addEventListener('DOMContentLoaded', function () {
       if (video360) {
         video360.load();
       }
+    }
+    
+    // Check if this is an XR-only track (no audio link)
+    const isXROnlyTrack = hasXRScene && (!normalizedTrack.audioSrc || normalizedTrack.audioSrc.trim() === '');
+    if (isXROnlyTrack) {
+      console.log('This is an XR-only track with no audio link - forcing XR mode');
+      
+      // Store this state in the track object for reference elsewhere
+      track.isXROnlyTrack = true;
+      
+      // Store in global state if available
+      if (window.PlayerState) {
+        window.PlayerState.currentTrackIsXROnly = true;
+      }
+      
+      // Add a special class to the body for CSS targeting
+      document.body.classList.add('xr-only-track');
+      
+      // Immediately hide the exit XR button if it exists
+      const exitXRBtn = document.getElementById('exitXRBtn');
+      if (exitXRBtn) {
+        console.log('Preemptively hiding exit XR button for XR-only track');
+        exitXRBtn.style.display = 'none';
+        exitXRBtn.style.pointerEvents = 'none';
+        exitXRBtn.setAttribute('disabled', 'disabled');
+        exitXRBtn.classList.add('hidden');
+      }
+      
+      // Force XR mode immediately
+      setTimeout(() => {
+        // Call switchToXRMode with isXROnlyTrack flag
+        if (typeof switchToXRMode === 'function') {
+          // Pass the video source directly to avoid the check in switchToXRMode
+          const videoSrc = normalizedTrack.videoSrc || normalizedTrack.XR_Scene;
+          if (videoSrc && videoSrc.trim() !== '') {
+            preloadVideoBeforeSwitch(videoSrc, true);
+          }
+        }
+      }, 500);
+    } else {
+      // For tracks with audio, ensure we remove the XR-only markers
+      track.isXROnlyTrack = false;
+      
+      if (window.PlayerState) {
+        window.PlayerState.currentTrackIsXROnly = false;
+      }
+      
+      document.body.classList.remove('xr-only-track');
     }
     
     // Update album artwork
@@ -3067,28 +3164,30 @@ document.addEventListener('DOMContentLoaded', function () {
     preloadCurrentTrackMedia();
     
     // Load the media
-    audio.load();
-    
-    // Hide the loading message once loaded
-    audio.addEventListener('canplaythrough', function onCanPlayThrough() {
-      message.style.display = "none";
-      audio.removeEventListener('canplaythrough', onCanPlayThrough);
+    if (normalizedTrack.audioSrc) {
+      audio.load();
       
-      // Resume playback if it was playing before
-      if (wasPlaying) {
-        console.log('Resuming playback after track load');
-        playMedia();
-      }
-    }, { once: true });
-    
-    // Handle loading errors
-    audio.addEventListener('error', function onError(e) {
-      console.error('Error loading audio:', e);
-      message.textContent = "Error loading audio. Please try again.";
+      // Hide the loading message once loaded
+      audio.addEventListener('canplaythrough', function onCanPlayThrough() {
+        message.style.display = "none";
+        audio.removeEventListener('canplaythrough', onCanPlayThrough);
+        
+        // Resume playback if it was playing before
+        if (wasPlaying) {
+          console.log('Resuming playback after track load');
+          playMedia();
+        }
+      }, { once: true });
       
-      // Try to recover with a different file format or retry
-      retryLoadingAudio(normalizedTrack.audioSrc);
-    }, { once: true });
+      // Handle loading errors
+      audio.addEventListener('error', function onError(e) {
+        console.error('Error loading audio:', e);
+        message.textContent = "Error loading audio. Please try again.";
+        
+        // Try to recover with a different file format or retry
+        retryLoadingAudio(normalizedTrack.audioSrc);
+      }, { once: true });
+    }
     
     // Reset end detection flag
     audio.endTriggered = false;
@@ -3688,6 +3787,14 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     
+    // Get the track object
+    const selectedTrack = playlist[trackIndex];
+    
+    // Check if this is an XR-only track (has XR scene but no audio)
+    const hasXRScene = selectedTrack.videoSrc && selectedTrack.videoSrc.trim() !== '';
+    const hasAudio = selectedTrack.audioSrc && selectedTrack.audioSrc.trim() !== '';
+    const isXROnlyTrack = hasXRScene && !hasAudio;
+    
     // Check if audio was playing before selecting a new track
     const wasPlaying = !activeMediaElement.paused;
     
@@ -3696,6 +3803,29 @@ document.addEventListener('DOMContentLoaded', function () {
       activeMediaElement.pause();
     }
     
+    // Special handling for XR-only tracks
+    if (isXROnlyTrack) {
+      console.log("XR-only track selected, skipping audio mode switch and forcing XR mode");
+      
+      // Load the track first - this will setup all the required sources
+      loadTrack(selectedTrack, false);
+      
+      // Small delay to allow track to load before switching to XR mode
+      setTimeout(() => {
+        // Force XR mode for this track
+        if (hasXRScene) {
+          const videoSrc = selectedTrack.videoSrc;
+          preloadVideoBeforeSwitch(videoSrc, true);
+        }
+        
+        // Close the playlist
+        togglePlaylist();
+      }, 300);
+      
+      return;
+    }
+    
+    // Normal track handling (with audio)
     // Always switch to audio mode first when changing tracks per global rule
     if (isXRMode) {
       console.log("Switching to audio mode first for track change per global rule");
@@ -3704,7 +3834,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Small delay to allow audio mode switch to complete before loading the new track
       setTimeout(() => {
         // Load the selected track
-        loadTrack(playlist[trackIndex], wasPlaying);
+        loadTrack(selectedTrack, wasPlaying);
         
         // Reset playlist positioning before closing to ensure smooth animation
         resetPlaylistPositioning(true, true);
@@ -3717,7 +3847,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 200);
     } else {
       // Already in audio mode, just load the track
-      loadTrack(playlist[trackIndex], wasPlaying);
+      loadTrack(selectedTrack, wasPlaying);
       
       // Reset playlist positioning before closing to ensure smooth animation
       resetPlaylistPositioning(true, true);
@@ -3860,9 +3990,10 @@ document.addEventListener('DOMContentLoaded', function () {
   /**
    * Complete the switch to XR mode after video preloading
    * @param {boolean} wasPlaying - Whether media was playing before switch
+   * @param {boolean} isXROnlyTrack - Whether this is an XR-only track with no audio
    */
-  function completeXRModeSwitch(wasPlaying) {
-    console.log('Completing switch to XR mode, wasPlaying:', wasPlaying);
+  function completeXRModeSwitch(wasPlaying, isXROnlyTrack = false) {
+    console.log('Completing switch to XR mode, wasPlaying:', wasPlaying, 'isXROnlyTrack:', isXROnlyTrack);
     
     // Save current time
     const currentTime = audio ? audio.currentTime : 0;
@@ -3876,17 +4007,54 @@ document.addEventListener('DOMContentLoaded', function () {
       videoPlayerContainer.classList.remove('hidden');
     }
     
-    // Ensure exit XR button is visible and properly positioned
+    // Ensure exit XR button visibility based on track capabilities
     if (exitXRBtn) {
-      // Reset any previous styling that might be hiding it
-      exitXRBtn.style.display = 'flex';
-      exitXRBtn.style.opacity = '1';
-      exitXRBtn.style.pointerEvents = 'auto';
-      exitXRBtn.style.zIndex = '100'; // Ensure it's above the video sphere
+      if (isXROnlyTrack) {
+        // If this is an XR-only track, hide the exit XR button
+        console.log('XR-only track: hiding exit XR button - PLAYER CONTROLS');
+        exitXRBtn.style.display = 'none';
+        exitXRBtn.style.pointerEvents = 'none';
+        exitXRBtn.setAttribute('disabled', 'disabled');
+        exitXRBtn.classList.add('hidden');
+        
+        // Also update the global element reference if available
+        if (window.PlayerState && window.PlayerState.elements && window.PlayerState.elements.exitXRBtn) {
+          console.log('Updating PlayerState.elements.exitXRBtn for XR-only track');
+          window.PlayerState.elements.exitXRBtn.style.display = 'none';
+          window.PlayerState.elements.exitXRBtn.style.pointerEvents = 'none';
+          window.PlayerState.elements.exitXRBtn.setAttribute('disabled', 'disabled');
+          window.PlayerState.elements.exitXRBtn.classList.add('hidden');
+        }
+      } else {
+        // Reset any previous styling that might be hiding it
+        exitXRBtn.style.display = 'flex';
+        exitXRBtn.style.opacity = '1';
+        exitXRBtn.style.pointerEvents = 'auto';
+        exitXRBtn.style.zIndex = '100'; // Ensure it's above the video sphere
+        exitXRBtn.removeAttribute('disabled');
+        exitXRBtn.classList.remove('hidden');
+      }
       
       console.log('Exit XR button display style set to:', exitXRBtn.style.display);
     } else {
-      console.warn('Exit XR button element not found');
+      console.warn('Exit XR button element not found in player-controls.js');
+      
+      // Try to find it through other means
+      const exitXRBtnGlobal = window.PlayerState && window.PlayerState.elements.exitXRBtn;
+      if (exitXRBtnGlobal) {
+        console.log('Found exitXRBtn through PlayerState, updating visibility');
+        if (isXROnlyTrack) {
+          exitXRBtnGlobal.style.display = 'none';
+          exitXRBtnGlobal.style.pointerEvents = 'none';
+          exitXRBtnGlobal.setAttribute('disabled', 'disabled');
+          exitXRBtnGlobal.classList.add('hidden');
+        } else {
+          exitXRBtnGlobal.style.display = 'flex';
+          exitXRBtnGlobal.style.pointerEvents = 'auto';
+          exitXRBtnGlobal.removeAttribute('disabled');
+          exitXRBtnGlobal.classList.remove('hidden');
+        }
+      }
     }
     
     // Update camera reset button visibility
@@ -3969,6 +4137,43 @@ document.addEventListener('DOMContentLoaded', function () {
     if (exitXRBtn) {
       exitXRBtn.addEventListener('click', function() {
         console.log('Exit XR button clicked');
+        
+        // Check if this is an XR-only track
+        const currentTrack = currentTrackIndex !== -1 ? playlist[currentTrackIndex] : null;
+        if (currentTrack) {
+          // Check for XR-only flags first
+          if (currentTrack.isXROnlyTrack === true) {
+            console.log('Blocked exit to audio mode: This is an XR-only track with no audio');
+            // Show a message to the user
+            if (message) {
+              message.textContent = "Audio mode not available for this track";
+              message.style.display = "block";
+              // Hide message after a delay
+              setTimeout(() => {
+                message.style.display = "none";
+              }, 2000);
+            }
+            return; // Prevent switching
+          }
+          
+          // Secondary check for audio source
+          const hasAudio = currentTrack.audioSrc && currentTrack.audioSrc.trim() !== '';
+          if (!hasAudio) {
+            console.log('Blocked exit to audio mode: No audio source available');
+            // Show a message to the user
+            if (message) {
+              message.textContent = "Audio mode not available for this track";
+              message.style.display = "block";
+              // Hide message after a delay
+              setTimeout(() => {
+                message.style.display = "none";
+              }, 2000);
+            }
+            return; // Prevent switching
+          }
+        }
+        
+        // If we made it here, it's safe to switch to audio mode
         switchToAudioMode();
       });
     }
@@ -4334,5 +4539,31 @@ document.addEventListener('DOMContentLoaded', function() {
   const video360 = document.getElementById('video360');
   if (video360) {
     video360.addEventListener('error', handleVideoLoadError);
+  }
+});
+
+// Add force-xr-mode event listener outside the DOMContentLoaded handler
+document.addEventListener('force-xr-mode', function(event) {
+  console.log('Force XR mode event received:', event.detail);
+  
+  // Get event details
+  const { trackIndex, isXROnly } = event.detail;
+  
+  // Ensure we have a valid track
+  if (typeof playlist !== 'undefined' && trackIndex !== undefined && trackIndex >= 0 && trackIndex < playlist.length) {
+    const track = playlist[trackIndex];
+    
+    if (track && track.videoSrc && track.videoSrc.trim() !== '') {
+      console.log('Forcing XR mode for track:', track.title);
+      
+      // Make sure we have access to the function
+      if (typeof preloadVideoBeforeSwitch === 'function') {
+        preloadVideoBeforeSwitch(track.videoSrc, isXROnly);
+      } else if (typeof window.preloadVideoBeforeSwitch === 'function') {
+        window.preloadVideoBeforeSwitch(track.videoSrc, isXROnly);
+      } else {
+        console.error('Could not find preloadVideoBeforeSwitch function');
+      }
+    }
   }
 });

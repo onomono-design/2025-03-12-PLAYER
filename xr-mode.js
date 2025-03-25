@@ -62,6 +62,7 @@ export function switchToXRMode() {
     console.log('Current track for XR mode:', currentTrack ? {
       title: currentTrack.title,
       videoSrc: currentTrack.videoSrc,
+      audioSrc: currentTrack.audioSrc,
       index: PlayerState.currentTrackIndex
     } : 'No current track');
     
@@ -85,6 +86,46 @@ export function switchToXRMode() {
       }
     }
     
+    // Check if this is an XR-only track (no audio source)
+    const hasAudio = currentTrack.audioSrc && currentTrack.audioSrc.trim() !== '';
+    const isXROnlyTrack = !hasAudio;
+    
+    if (isXROnlyTrack) {
+      console.log('Track is XR-only (no audio source)');
+      
+      // Store this state in the track object for reference elsewhere
+      currentTrack.isXROnlyTrack = true;
+      
+      // Store in global state if available
+      PlayerState.currentTrackIsXROnly = true;
+      
+      // Add a special class to the body for CSS targeting
+      document.body.classList.add('xr-only-track');
+      
+      // Immediately hide the exit XR button if it exists
+      if (PlayerState.elements.exitXRBtn) {
+        console.log('Immediately hiding exit XR button from switchToXRMode');
+        PlayerState.elements.exitXRBtn.style.display = 'none';
+        PlayerState.elements.exitXRBtn.style.pointerEvents = 'none';
+        PlayerState.elements.exitXRBtn.setAttribute('disabled', 'disabled');
+        PlayerState.elements.exitXRBtn.classList.add('hidden');
+      }
+      
+      // Also try direct DOM access
+      const exitXRBtnDOM = document.getElementById('exitXRBtn');
+      if (exitXRBtnDOM && exitXRBtnDOM !== PlayerState.elements.exitXRBtn) {
+        exitXRBtnDOM.style.display = 'none';
+        exitXRBtnDOM.style.pointerEvents = 'none';
+        exitXRBtnDOM.setAttribute('disabled', 'disabled');
+        exitXRBtnDOM.classList.add('hidden');
+      }
+    } else {
+      // For tracks with audio, ensure we remove the XR-only markers
+      currentTrack.isXROnlyTrack = false;
+      PlayerState.currentTrackIsXROnly = false;
+      document.body.classList.remove('xr-only-track');
+    }
+    
     // Store the current playback state
     const wasPlaying = PlayerState.activeMediaElement && !PlayerState.activeMediaElement.paused;
     
@@ -106,17 +147,17 @@ export function switchToXRMode() {
           if (scene) {
             scene.addEventListener('loaded', () => {
               console.log('A-Frame scene loaded, completing XR mode switch');
-              completeXRModeSwitch(wasPlaying);
+              completeXRModeSwitch(wasPlaying, isXROnlyTrack);
             }, { once: true });
             
             // If scene is already loaded, complete switch immediately
             if (scene.hasLoaded) {
               console.log('A-Frame scene already loaded, completing XR mode switch');
-              completeXRModeSwitch(wasPlaying);
+              completeXRModeSwitch(wasPlaying, isXROnlyTrack);
             }
           } else {
             console.log('A-Frame scene not found, proceeding anyway');
-            completeXRModeSwitch(wasPlaying);
+            completeXRModeSwitch(wasPlaying, isXROnlyTrack);
           }
         })
         .catch(error => {
@@ -124,26 +165,27 @@ export function switchToXRMode() {
           
           // Show error message but proceed anyway
           showMessage("Limited 360° viewing available.", 3000);
-          completeXRModeSwitch(wasPlaying);
+          completeXRModeSwitch(wasPlaying, isXROnlyTrack);
         });
     } else {
       // Not a mobile device, proceed normally
       console.log('Not a mobile device, proceeding normally');
-      completeXRModeSwitch(wasPlaying);
+      completeXRModeSwitch(wasPlaying, isXROnlyTrack);
     }
   } catch (error) {
     ErrorLogger.handleError(error, { function: 'switchToXRMode' });
     // Attempt to continue even if there's an error
-    completeXRModeSwitch(false);
+    completeXRModeSwitch(false, false);
   }
 }
 
 /**
  * Complete the switch to XR mode
  * @param {boolean} wasPlaying - Whether media was playing before the switch
+ * @param {boolean} isXROnlyTrack - Whether this is an XR-only track with no audio
  */
-export function completeXRModeSwitch(wasPlaying) {
-  console.log('Completing XR mode switch, wasPlaying:', wasPlaying);
+export function completeXRModeSwitch(wasPlaying, isXROnlyTrack = false) {
+  console.log('Completing XR mode switch, wasPlaying:', wasPlaying, 'isXROnlyTrack:', isXROnlyTrack);
   
   try {
     // Make sure we have a current track
@@ -189,6 +231,53 @@ export function completeXRModeSwitch(wasPlaying) {
     
     // Update UI for XR mode
     updateUIForCurrentMode(true);
+    
+    // Handle exit XR button visibility
+    if (PlayerState.elements.exitXRBtn) {
+      if (isXROnlyTrack) {
+        // XR-only track should hide the exit button
+        console.log('XR-only track: hiding exit XR button - XR MODULE');
+        PlayerState.elements.exitXRBtn.style.display = 'none';
+        PlayerState.elements.exitXRBtn.style.pointerEvents = 'none';
+        PlayerState.elements.exitXRBtn.setAttribute('disabled', 'disabled');
+        PlayerState.elements.exitXRBtn.classList.add('hidden');
+        
+        // Also try direct DOM access as fallback
+        const exitXRBtnDOM = document.getElementById('exitXRBtn');
+        if (exitXRBtnDOM && exitXRBtnDOM !== PlayerState.elements.exitXRBtn) {
+          console.log('Found exitXRBtn through direct DOM access, hiding it too');
+          exitXRBtnDOM.style.display = 'none';
+          exitXRBtnDOM.style.pointerEvents = 'none';
+          exitXRBtnDOM.setAttribute('disabled', 'disabled');
+          exitXRBtnDOM.classList.add('hidden');
+        }
+      } else {
+        // Normal track should show the exit button
+        PlayerState.elements.exitXRBtn.style.display = 'flex';
+        PlayerState.elements.exitXRBtn.style.pointerEvents = 'auto';
+        PlayerState.elements.exitXRBtn.removeAttribute('disabled');
+        PlayerState.elements.exitXRBtn.classList.remove('hidden');
+      }
+    } else {
+      console.warn('Exit XR button element not found in PlayerState');
+      
+      // Try direct DOM access as fallback
+      const exitXRBtnDOM = document.getElementById('exitXRBtn');
+      if (exitXRBtnDOM) {
+        console.log('Found exitXRBtn through direct DOM access');
+        if (isXROnlyTrack) {
+          exitXRBtnDOM.style.display = 'none';
+          exitXRBtnDOM.style.pointerEvents = 'none';
+          exitXRBtnDOM.setAttribute('disabled', 'disabled');
+          exitXRBtnDOM.classList.add('hidden');
+        } else {
+          exitXRBtnDOM.style.display = 'flex';
+          exitXRBtnDOM.style.pointerEvents = 'auto';
+          exitXRBtnDOM.removeAttribute('disabled');
+          exitXRBtnDOM.classList.remove('hidden');
+        }
+      }
+    }
     
     // Ensure proper muting
     enforceProperMuting();
@@ -248,6 +337,22 @@ export function switchToAudioMode() {
   console.log('Switching to audio-only mode');
   
   try {
+    // Check if this is an XR-only track (no audio link)
+    const currentTrack = PlayerState.currentTrackIndex !== -1 ? 
+      PlayerState.playlist[PlayerState.currentTrackIndex] : null;
+    
+    if (currentTrack) {
+      // Check for empty/missing audio source
+      const hasAudioSource = currentTrack.audioSrc && currentTrack.audioSrc.trim() !== '';
+      
+      // If no audio source, don't allow switch to audio mode
+      if (!hasAudioSource) {
+        console.log('This track has no audio source - remaining in XR mode');
+        showMessage("Audio mode not available for this track", 2000);
+        return;
+      }
+    }
+    
     // Save current time and play state
     const currentTime = PlayerState.video ? PlayerState.video.currentTime : 0;
     const wasPlaying = PlayerState.video && !PlayerState.video.paused;

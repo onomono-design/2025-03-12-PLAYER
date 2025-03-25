@@ -496,6 +496,12 @@
       0% { transform: perspective(500px) rotateY(-15deg) rotateX(5deg); }
       100% { transform: perspective(500px) rotateY(15deg) rotateX(-5deg); }
     }
+    /* Hide exit XR button for XR-only tracks */
+    body.xr-only-track #exitXRBtn {
+      display: none !important;
+      pointer-events: none !important;
+      visibility: hidden !important;
+    }
   </style>
 
   <script type="module">
