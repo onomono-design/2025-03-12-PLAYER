@@ -1662,7 +1662,33 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateTimeDisplay() {
     if (!isScrubbing) {
       const currentTime = Math.floor(activeMediaElement.currentTime);
-      const duration = Math.floor(activeMediaElement.duration) || 1;
+      
+      // Get the appropriate duration (handle XR-only tracks correctly)
+      let duration = Math.floor(activeMediaElement.duration) || 1;
+      
+      // Special handling for XR-only tracks - ensure scrubber max is set correctly
+      if (isXRMode && currentTrackIndex !== -1 && playlist[currentTrackIndex]) {
+        const currentTrack = playlist[currentTrackIndex];
+        const isXROnlyTrack = currentTrack.isXROnlyTrack || 
+                             (window.PlayerState && window.PlayerState.currentTrackIsXROnly) ||
+                             document.body.classList.contains('xr-only-track');
+        
+        if (isXROnlyTrack && video && video.duration > 0) {
+          // For XR-only tracks, always use video duration
+          duration = Math.floor(video.duration);
+          
+          // Ensure scrubber max and duration display are updated
+          if (scrubber && scrubber.max !== duration) {
+            scrubber.max = duration;
+            console.log(`Updated scrubber.max to ${duration} from updateTimeDisplay`);
+          }
+          
+          if (durationDisplay && durationDisplay.textContent !== formatTime(duration)) {
+            durationDisplay.textContent = formatTime(duration);
+          }
+        }
+      }
+      
       const progressPercentage = (currentTime / duration) * 100;
       
       // Log every 10 seconds for debugging
@@ -3960,6 +3986,30 @@ document.addEventListener('DOMContentLoaded', function () {
       videoHeight: video.videoHeight,
       readyState: video.readyState
     });
+    
+    // Check if this is an XR-only track and update scrubber and duration display
+    if (currentTrackIndex !== -1 && playlist[currentTrackIndex]) {
+      const currentTrack = playlist[currentTrackIndex];
+      const isXROnlyTrack = currentTrack.isXROnlyTrack || 
+                           (window.PlayerState && window.PlayerState.currentTrackIsXROnly) ||
+                           document.body.classList.contains('xr-only-track');
+                           
+      if (isXROnlyTrack && video.duration > 0) {
+        console.log(`Updating scrubber for XR-only track with video duration: ${video.duration} seconds`);
+        
+        // Update the scrubber max value based on the video duration
+        if (scrubber) {
+          scrubber.max = Math.floor(video.duration);
+          console.log(`Set scrubber.max to ${scrubber.max}`);
+        }
+        
+        // Update the duration display
+        if (durationDisplay) {
+          durationDisplay.textContent = formatTime(Math.floor(video.duration));
+          console.log(`Set duration display to ${durationDisplay.textContent}`);
+        }
+      }
+    }
   });
 
   /**
@@ -4068,6 +4118,24 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update active media element
     activeMediaElement = video;
     isXRMode = true;
+    
+    // For XR-only tracks, ensure the duration information is reflected in UI
+    if (isXROnlyTrack && video && video.duration > 0) {
+      console.log(`Setting scrubber for XR-only track with duration: ${video.duration}`);
+      
+      // Update the scrubber max value
+      if (scrubber) {
+        scrubber.max = Math.floor(video.duration);
+      }
+      
+      // Update the duration display
+      if (durationDisplay) {
+        durationDisplay.textContent = formatTime(Math.floor(video.duration));
+      }
+      
+      // Force an immediate update of the time display
+      updateTimeDisplay();
+    }
     
     // Always ensure audio is muted in XR mode to prevent double sound
     if (audio) audio.muted = true;
