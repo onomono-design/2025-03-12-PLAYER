@@ -161,6 +161,9 @@ body {
   gap: 8px;
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* Ensure the button is always visible */
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .exit-xr-button:hover {
@@ -185,6 +188,13 @@ body.mobile-device .exit-xr-button {
 .hidden {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Exception for exit XR button - it should never be hidden by the .hidden class */
+.video-player-container:not(.hidden) .exit-xr-button {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  display: flex !important;
 }
 
 /* Mobile adjustments for audio player */
@@ -1676,4 +1686,56 @@ body.ios-device .scrubber-progress {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* A-Frame scene should have a lower z-index than the exit button */
+a-scene {
+  z-index: 10;
+}
+
+/* The exit button should be above the A-Frame scene */
+.exit-xr-button {
+  z-index: 100 !important;
+}
+
+/* Network status indicator */
+.network-status {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 100;
+  display: none; /* Hidden by default, shown when network issues occur */
+  transition: opacity 0.3s;
+}
+
+.network-status.online {
+  background-color: rgba(0, 128, 0, 0.7);
+}
+
+.network-status.offline {
+  background-color: rgba(255, 0, 0, 0.7);
+  display: block;
+}
+
+.network-status.slow {
+  background-color: rgba(255, 165, 0, 0.7);
+  display: block;
+}
+
+/* Special styles for La Placita Raid loading state */
+.loading-la-placita .message {
+  background: linear-gradient(135deg, #192F4A, #384454);
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
 } 

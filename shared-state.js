@@ -31,6 +31,7 @@ export const PlayerState = {
   playlistGroups: {},
   currentTrackIndex: -1,
   currentPlaylistView: "folders",
+  rawTrackData: [], // Store original unmodified track data
   
   // UI elements (to be populated after DOM is loaded)
   elements: {

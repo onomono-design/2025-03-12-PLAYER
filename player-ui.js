@@ -179,20 +179,64 @@ export function formatTime(seconds) {
 /**
  * Update the audio player UI with track information
  * @param {string} title - The track title
- * @param {string} artist - The artist name
+ * @param {string} artistOrPlaylist - The artist or playlist name
  * @param {string} artworkUrl - The URL to the album artwork
  */
-export function updateAudioPlayerUI(title, artist, artworkUrl) {
-  if (!PlayerState.elements.audioTitle || !PlayerState.elements.audioArtist) return;
-  
-  // Update title and artist
-  PlayerState.elements.audioTitle.textContent = title || 'Unknown Title';
-  PlayerState.elements.audioArtist.textContent = artist || 'Unknown Artist';
-  
-  // Update album artwork if provided
-  if (artworkUrl && PlayerState.elements.albumArt) {
-    PlayerState.elements.albumArt.src = artworkUrl;
-    PlayerState.elements.albumArt.alt = `${title} Album Artwork`;
+export function updateAudioPlayerUI(title, artistOrPlaylist, artworkUrl) {
+  try {
+    console.log(`Updating audio player UI - Title: "${title}", Artist/Playlist: "${artistOrPlaylist}", Artwork: ${artworkUrl}`);
+    
+    // Update title
+    if (PlayerState.elements.audioTitle) {
+      PlayerState.elements.audioTitle.textContent = title || 'Unknown Title';
+    }
+    
+    // Update artist/playlist
+    if (PlayerState.elements.audioArtist) {
+      PlayerState.elements.audioArtist.textContent = artistOrPlaylist || '';
+    }
+    
+    // Update artwork
+    if (PlayerState.elements.albumArt && artworkUrl) {
+      // Log the artwork URL being used
+      console.log('Setting album artwork to:', artworkUrl);
+      
+      // Check if current src is already the same to avoid unnecessary reloads
+      if (PlayerState.elements.albumArt.src !== artworkUrl) {
+        // Set the artwork
+        PlayerState.elements.albumArt.src = artworkUrl;
+        
+        // Track load success
+        PlayerState.elements.albumArt.onload = () => {
+          console.log('Album artwork loaded successfully');
+          PlayerState.elements.albumArt.style.opacity = '1';
+        };
+        
+        // Handle load errors
+        PlayerState.elements.albumArt.onerror = (e) => {
+          console.error('Error loading album artwork:', e);
+          
+          // Try using raw track data as fallback
+          const currentTrack = PlayerState.currentTrackIndex !== -1 ? 
+            PlayerState.rawTrackData[PlayerState.currentTrackIndex] : null;
+            
+          if (currentTrack && currentTrack.artwork_url && currentTrack.artwork_url !== artworkUrl) {
+            console.log('Trying fallback artwork URL:', currentTrack.artwork_url);
+            PlayerState.elements.albumArt.src = currentTrack.artwork_url;
+          } else {
+            // Use default artwork as last resort
+            PlayerState.elements.albumArt.src = 'assets/images/default-artwork.jpg';
+          }
+        };
+      } else {
+        console.log('Artwork URL unchanged, skipping update');
+      }
+    } else if (PlayerState.elements.albumArt) {
+      // No artwork URL provided, use default
+      PlayerState.elements.albumArt.src = 'assets/images/default-artwork.jpg';
+    }
+  } catch (error) {
+    ErrorLogger.handleError(error, { function: 'updateAudioPlayerUI' });
   }
 }
 

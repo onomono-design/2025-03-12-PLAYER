@@ -200,6 +200,14 @@ function processPlaylistData(data) {
     
     // Normalize track data
     const normalizedTracks = tracks.map(track => {
+      // Debug to see what's coming in from the JSON
+      console.log('Processing track:', {
+        title: track.title,
+        chapter: track.chapter,
+        XR_Scene: track.XR_Scene,
+        IsAR: track.IsAR
+      });
+      
       return {
         title: track.title || 'Unknown Title',
         audioSrc: track.audioSrc || track.audio_url || '',
@@ -208,17 +216,24 @@ function processPlaylistData(data) {
         playlistName: track.playlistName || track.playlist || 'Uncategorized',
         chapter: track.chapter || 0,
         duration: track.duration || '0:00',
-        isAR: track.isAR || track.IsAR || false
+        isAR: Boolean(track.isAR || track.IsAR) // Ensure proper boolean conversion
       };
-    }).filter(track => track.audioSrc); // Only keep tracks with an audio source
+    }).filter(track => track.audioSrc || track.videoSrc); // Only keep tracks with an audio source or video source
     
     // Organize tracks by playlist
     const playlistGroups = {};
     const flatPlaylist = [];
+    const rawTrackData = []; // Store the original track data
     
-    normalizedTracks.forEach(track => {
+    normalizedTracks.forEach((track, index) => {
       // Add track to flat playlist
       flatPlaylist.push(track);
+      
+      // Store the original raw track data
+      rawTrackData[index] = tracks.find(t => 
+        t.title === track.title && 
+        (t.audio_url === track.audioSrc || t.audioSrc === track.audioSrc)
+      ) || null;
       
       // Group by playlist name
       const playlistName = track.playlistName;
@@ -231,6 +246,7 @@ function processPlaylistData(data) {
     // Update PlayerState
     PlayerState.playlist = flatPlaylist;
     PlayerState.playlistGroups = playlistGroups;
+    PlayerState.rawTrackData = rawTrackData; // Store the raw track data
     
     // Dispatch event for playlist update
     PlayerState.setPlaylist(flatPlaylist);
@@ -238,7 +254,29 @@ function processPlaylistData(data) {
     // Load the first track if no track is currently loaded
     // But don't auto-play it - set autoPlay to false for initial load
     if (PlayerState.currentTrackIndex === -1 && flatPlaylist.length > 0) {
+      console.log('No current track loaded, loading first track');
       loadTrack(0, false); // Explicitly set autoPlay to false for initial load
+    } else if (PlayerState.currentTrackIndex !== -1) {
+      // If we already have a track loaded, update its data if needed
+      const currentTrack = flatPlaylist[PlayerState.currentTrackIndex];
+      if (currentTrack) {
+        console.log('Updating current track with latest data');
+        
+        // Check if artwork URL needs to be updated
+        if (!currentTrack.artworkUrl && rawTrackData[PlayerState.currentTrackIndex]?.artwork_url) {
+          currentTrack.artworkUrl = rawTrackData[PlayerState.currentTrackIndex].artwork_url;
+          console.log('Updated artwork URL from raw data:', currentTrack.artworkUrl);
+          
+          // Update UI with the correct artwork
+          import('./player-ui.js').then(module => {
+            module.updateAudioPlayerUI(
+              currentTrack.title,
+              currentTrack.playlistName,
+              currentTrack.artworkUrl
+            );
+          });
+        }
+      }
     }
   } catch (error) {
     ErrorLogger.handleError(error, { function: 'processPlaylistData' });
@@ -398,75 +436,81 @@ function createTrackElement(track, index) {
   // Use a debounce technique to prevent rapid multiple clicks
   let isProcessingClick = false;
   trackElement.addEventListener('click', (e) => {
-    // Add ripple effect
-    const ripple = document.createElement('span');
-    ripple.className = 'ripple';
-    trackElement.appendChild(ripple);
-    
-    // Calculate position of ripple
-    const rect = trackElement.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Set ripple position
-    ripple.style.left = x + 'px';
-    ripple.style.top = y + 'px';
-    
-    // Remove ripple after animation
-    setTimeout(() => {
-      ripple.remove();
-    }, 600);
-    
-    // Prevent processing if already processing a click
-    if (isProcessingClick) {
-      console.log('Ignoring click - already processing another click');
-      return;
-    }
-    
-    // Set processing flag
-    isProcessingClick = true;
-    
-    // Add loading class
-    trackElement.classList.add('loading');
-    
-    // Get track index
-    const trackIndex = parseInt(trackElement.dataset.index);
-    console.log(`Track clicked: index=${trackIndex}`);
-    
-    // Create touch session checkpoint for mobile
-    window.DIRECT_USER_INTERACTION = true;
-    
-    // Clear timeout after a while
-    setTimeout(() => {
-      window.DIRECT_USER_INTERACTION = false;
-    }, 3000);
-    
-    // Close the playlist after selection on mobile to maximize screen space
-    if (PlayerState.isMobileDevice && 
-        PlayerState.elements.playlistContainer && 
-        PlayerState.elements.playlistContainer.classList.contains('visible')) {
-      // Delay slightly to allow user to see their selection
+    try {
+      // Add ripple effect
+      const ripple = document.createElement('span');
+      ripple.className = 'ripple';
+      trackElement.appendChild(ripple);
+      
+      // Calculate position of ripple
+      const rect = trackElement.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Set ripple position
+      ripple.style.left = x + 'px';
+      ripple.style.top = y + 'px';
+      
+      // Remove ripple after animation
       setTimeout(() => {
-        // Find and click the close button
-        const closeButton = document.getElementById('playlistClose');
-        if (closeButton) {
-          closeButton.click();
-        } else {
-          // Fallback - hide manually
-          PlayerState.elements.playlistContainer.classList.remove('visible');
-        }
-      }, 300);
-    }
-    
-    // Load the track with autoplay
-    loadTrack(trackIndex, true);
-    
-    // Reset processing flag after timeout
-    setTimeout(() => {
+        ripple.remove();
+      }, 600);
+      
+      // Prevent processing if already processing a click
+      if (isProcessingClick) {
+        console.log('Ignoring click - already processing another click');
+        return;
+      }
+      
+      // Set processing flag
+      isProcessingClick = true;
+      
+      // Add loading class
+      trackElement.classList.add('loading');
+      
+      // Get track index
+      const trackIndex = parseInt(trackElement.dataset.index);
+      console.log(`Track clicked: index=${trackIndex}`);
+      
+      // Create touch session checkpoint for mobile
+      window.DIRECT_USER_INTERACTION = true;
+      
+      // Clear timeout after a while
+      setTimeout(() => {
+        window.DIRECT_USER_INTERACTION = false;
+      }, 3000);
+      
+      // Close the playlist after selection on mobile to maximize screen space
+      if (PlayerState.isMobileDevice && 
+          PlayerState.elements.playlistContainer && 
+          PlayerState.elements.playlistContainer.classList.contains('visible')) {
+        // Delay slightly to allow user to see their selection
+        setTimeout(() => {
+          // Find and click the close button
+          const closeButton = document.getElementById('playlistClose');
+          if (closeButton) {
+            closeButton.click();
+          } else {
+            // Fallback - hide manually
+            PlayerState.elements.playlistContainer.classList.remove('visible');
+          }
+        }, 300);
+      }
+      
+      // Load the track (it will handle XR-only tracks internally)
+      loadTrack(trackIndex, true);
+      
+      // Reset processing flag after timeout
+      setTimeout(() => {
+        isProcessingClick = false;
+        // Double check that loading class is removed
+        trackElement.classList.remove('loading');
+      }, PlayerState.isMobileDevice ? 2000 : 1000);
+    } catch (error) {
+      ErrorLogger.handleError(error, { function: 'createTrackElement.clickHandler' });
       isProcessingClick = false;
-      // Double check that loading class is removed
       trackElement.classList.remove('loading');
-    }, PlayerState.isMobileDevice ? 2000 : 1000);
+    }
   });
   
   return trackElement;
@@ -508,10 +552,18 @@ export function loadTrack(index, autoPlay = false) {
     
     console.log(`Loading track: "${track.title}" from playlist "${track.playlistName}"`);
     
-    // Find track element and add loading class
-    const trackElement = document.querySelector(`.playlist-track[data-index="${index}"]`);
-    if (trackElement) {
-      trackElement.classList.add('loading');
+    const rawTrack = PlayerState.rawTrackData && PlayerState.rawTrackData[index];
+    
+    // Debug artwork URLs
+    console.log('Artwork URLs:', {
+      normalizedArtworkUrl: track.artworkUrl,
+      rawArtworkUrl: rawTrack ? rawTrack.artwork_url : 'No raw track data'
+    });
+    
+    // Ensure artwork URL is set correctly
+    if (!track.artworkUrl && rawTrack && rawTrack.artwork_url) {
+      console.log('Using raw track data for artwork URL:', rawTrack.artwork_url);
+      track.artworkUrl = rawTrack.artwork_url;
     }
     
     // Update track indexes
@@ -554,6 +606,16 @@ export function loadTrack(index, autoPlay = false) {
     if (PlayerState.audio) PlayerState.audio.pause();
     if (PlayerState.video) PlayerState.video.pause();
     
+    // Set playback state to paused initially
+    PlayerState.setPlaybackState(false);
+    
+    // Ensure UI reflects the paused state
+    import('./player-ui.js').then(module => {
+      module.updatePlayPauseButton(true); // true = paused
+    }).catch(error => {
+      console.error('Error updating play button state:', error);
+    });
+    
     // Clear any pending playback attempt timeout
     if (window.playbackAttemptTimeout) {
       clearTimeout(window.playbackAttemptTimeout);
@@ -568,6 +630,7 @@ export function loadTrack(index, autoPlay = false) {
       PlayerState.audio.load();
     }
     
+    // Always load video source in the background if available, regardless of mode
     if (PlayerState.video && track.videoSrc) {
       // For mobile devices, we'll use a sequential loading approach
       if (PlayerState.isMobileDevice) {
@@ -578,6 +641,7 @@ export function loadTrack(index, autoPlay = false) {
             
             // Then start loading video
             if (PlayerState.video) {
+              console.log(`Loading video source: ${track.videoSrc}`);
               PlayerState.video.src = track.videoSrc;
               PlayerState.video.load();
             }
@@ -587,6 +651,7 @@ export function loadTrack(index, autoPlay = false) {
         // Listen for audio ready state
         if (PlayerState.audio.readyState >= 3) {
           // Audio already ready, load video right away
+          console.log(`Loading video source (audio already ready): ${track.videoSrc}`);
           PlayerState.video.src = track.videoSrc;
           PlayerState.video.load();
         } else {
@@ -594,51 +659,102 @@ export function loadTrack(index, autoPlay = false) {
         }
       } else {
         // Desktop just loads both concurrently
+        console.log(`Loading video source for desktop: ${track.videoSrc}`);
         PlayerState.video.src = track.videoSrc;
         PlayerState.video.load();
       }
     } else if (PlayerState.video) {
-      // Clear video source if track doesn't have one
-      PlayerState.video.removeAttribute('src');
-      PlayerState.video.load();
+      // Check if raw track data has a video source
+      if (PlayerState.rawTrackData && PlayerState.rawTrackData[index] && 
+          PlayerState.rawTrackData[index].XR_Scene) {
+        const rawVideoSrc = PlayerState.rawTrackData[index].XR_Scene;
+        console.log(`Using raw XR_Scene data for video: ${rawVideoSrc}`);
+        track.videoSrc = rawVideoSrc; // Update the track with the correct source
+        PlayerState.video.src = rawVideoSrc;
+        PlayerState.video.load();
+      } else {
+        // Clear video source if track doesn't have one
+        console.log('No video source available, clearing video element');
+        PlayerState.video.removeAttribute('src');
+        PlayerState.video.load();
+      }
     }
     
-    // Set the active media element based on current mode
-    if (PlayerState.isXRMode) {
-      if (!track.videoSrc) {
-        // Switch to audio mode if track doesn't have video
-        import('./xr-mode.js').then(module => {
-          module.switchToAudioMode();
-          // After switching mode, ensure proper muting
-          enforceProperMuting();
-          
-          // Now attempt playback if requested
-          if (autoPlay) {
-            attemptPlaybackWithRetry();
+    // Always switch to audio mode when changing tracks, regardless of previous mode
+    // This implements the global rule that track changes always default to audio mode
+    const wasInXRMode = PlayerState.isXRMode;
+    
+    // Check if this is an XR-only track (has XR scene but no audio)
+    const hasXRScene = track.videoSrc && track.videoSrc.trim() !== '';
+    const hasAudio = track.audioSrc && track.audioSrc.trim() !== '';
+    const isXROnlyTrack = hasXRScene && !hasAudio;
+    
+    // Special handling for XR-only tracks
+    if (isXROnlyTrack) {
+      console.log('XR-only track detected, forcing XR mode');
+      
+      // Import XR mode module to switch to XR mode
+      import('./xr-mode.js').then(module => {
+        // Delay slightly to ensure video source is loaded
+        setTimeout(() => {
+          if (typeof module.switchToXRMode === 'function') {
+            module.switchToXRMode();
+          } else {
+            // Fallback to custom event if function not available
+            document.dispatchEvent(new CustomEvent('force-xr-mode', { 
+              detail: { trackIndex, isXROnly: true } 
+            }));
           }
-        });
-      } else {
-        PlayerState.setActiveMediaElement(PlayerState.video);
+        }, 500);
+      }).catch(error => {
+        console.error('Error importing XR-mode module:', error);
+        // Try fallback method with custom event
+        document.dispatchEvent(new CustomEvent('force-xr-mode', { 
+          detail: { trackIndex, isXROnly: true } 
+        }));
+      });
+    } else if (wasInXRMode) {
+      console.log('Track changed while in XR mode - switching to audio mode per global rule');
+      // Import and call switchToAudioMode, but still load XR content in background
+      import('./xr-mode.js').then(module => {
+        module.switchToAudioMode();
+        
+        // After switching mode, ensure proper muting
         enforceProperMuting();
         
         // Now attempt playback if requested
         if (autoPlay) {
-          // Add a slight delay for mobile devices to ensure resources are loaded
+          // Add a slight delay for resources to load
           setTimeout(() => {
-            attemptPlaybackWithRetry();
-          }, PlayerState.isMobileDevice ? loadTimeout : 0);
+            console.log('Attempting playback of newly loaded track due to autoPlay flag (after XR mode)');
+            
+            import('./player-core.js').then(module => {
+              // Use togglePlayPause to ensure proper UI updates
+              module.togglePlayPause();
+            }).catch(error => {
+              console.error('Error auto-playing track after XR mode:', error);
+            });
+          }, 500);
         }
-      }
+      });
     } else {
+      // Already in audio mode, just set the active media element
       PlayerState.setActiveMediaElement(PlayerState.audio);
       enforceProperMuting();
       
       // Now attempt playback if requested
       if (autoPlay) {
-        // Add a slight delay for mobile devices to ensure resources are loaded
+        // Add a slight delay for resources to load
         setTimeout(() => {
-          attemptPlaybackWithRetry();
-        }, PlayerState.isMobileDevice ? loadTimeout : 0);
+          console.log('Attempting playback of newly loaded track due to autoPlay flag');
+          
+          import('./player-core.js').then(module => {
+            // Use togglePlayPause to ensure proper UI updates
+            module.togglePlayPause();
+          }).catch(error => {
+            console.error('Error auto-playing track:', error);
+          });
+        }, PlayerState.isMobileDevice ? loadTimeout : 500);
       }
     }
     
