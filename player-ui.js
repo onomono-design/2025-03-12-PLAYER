@@ -1,6 +1,7 @@
 /**
  * Player UI Module
  * Handles all UI-related functionality for the media player
+ * Add function to check which tour is featured, change the lighter color to the tour color
  */
 
 import { PlayerState } from './shared-state.js';

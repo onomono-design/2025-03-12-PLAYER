@@ -86,6 +86,23 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.download-button {
+  background: rgba(255, 253, 236, 0.95);
+  color: var(--navy);
+  border: none;
+  border-radius: 1em;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Figtree', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .view-xr-button:hover {
   background: var(--creme);
   transform: translateX(-50%) scale(1.05);

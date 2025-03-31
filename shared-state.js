@@ -51,6 +51,7 @@ export const PlayerState = {
     audioTitle: null,
     audioArtist: null,
     viewXRBtn: null,
+    downloadAudioBtn: null,
     exitXRBtn: null,
     sceneName: null,
     playlistName: null,
@@ -129,6 +130,7 @@ export const PlayerState = {
     this.elements.audioTitle = document.getElementById('audioTitle');
     this.elements.audioArtist = document.getElementById('audioArtist');
     this.elements.viewXRBtn = document.getElementById('viewXRBtn');
+    this.elements.downloadAudioBtn = document.getElementById('downloadAudioBtn');
     this.elements.exitXRBtn = document.getElementById('exitXRBtn');
     this.elements.sceneName = document.getElementById('sceneName');
     this.elements.playlistName = document.getElementById('playlistName');

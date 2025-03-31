@@ -365,6 +365,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const muteBtn = document.getElementById('muteBtn');
   resetCameraBtn = document.getElementById('resetCameraBtn');
   const viewXRBtn = document.getElementById('viewXRBtn');
+  const downloadAudioBtn = document.getElementById('downloadAudioBtn');
   const exitXRBtn = document.getElementById('exitXRBtn');
   const message = document.getElementById('message');
   const scrubber = document.getElementById('scrubber');
@@ -1539,6 +1540,43 @@ document.addEventListener('DOMContentLoaded', function () {
     // Switch to XR mode directly without requesting permissions
     // A-Frame will handle its own permission requests
     switchToXRMode();
+  });
+
+  downloadAudioBtn.addEventListener('click', function() {
+    //User device downloads full tour audio
+      // Get the current track
+    const currentTrack = playlist[currentTrackIndex];
+    
+    if (!currentTrack || !currentTrack.audioSrc) {
+      console.error('No current track or audio source available');
+      message.textContent = "Error: No audio available for download.";
+      message.style.display = "block";
+      setTimeout(() => message.style.display = "none", 3000);
+      return;
+    }
+
+    // Create a temporary anchor element to trigger the download
+    const downloadLink = document.createElement('a');
+    downloadLink.href = currentTrack.audioSrc;
+    
+    // Extract the filename from the URL or use a default name
+    const fileName = currentTrack.audioSrc.split('/').pop() || 'audio_tour.mp3';
+    //FIXME: get full audio tour link
+    downloadLink.download = fileName;
+    
+    // Append the link to the body (required for Firefox)
+    document.body.appendChild(downloadLink);
+    
+    // Trigger the download
+    downloadLink.click();
+    
+    // Remove the link from the DOM
+    document.body.removeChild(downloadLink);
+    
+    // Show a success message
+    message.textContent = "Downloading audio...";
+    message.style.display = "block";
+    setTimeout(() => message.style.display = "none", 3000);
   });
   
   // Exit XR button handler
